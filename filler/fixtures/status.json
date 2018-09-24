@@ -1,0 +1,10 @@
+[
+  {
+    "model": "filler.Status",
+    "fields": {
+      "processing": "False",
+      "locked": "False",
+      "jobs_available": "False"
+    }
+  }
+]
