@@ -1,0 +1,16 @@
+# IDE
+.idea/
+*.iml
+
+# Extra Files
+*.*~
+db.sqlite3
+
+# Python
+__pycache__/
+
+# Static Files
+static/
+
+# Migrations
+*/migrations/
