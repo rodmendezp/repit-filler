@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
 from rest_framework.views import APIView
+from .tasks import get_video_candidates
 from .models import Status
 
 
@@ -20,6 +21,7 @@ class JobsAvailableView(APIView):
             data['job'] = get_job()
             status.jobs_available = False
             status.save()
+        get_video_candidates.delay(15)
         return JsonResponse(data)
 
 
