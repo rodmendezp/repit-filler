@@ -1,5 +1,6 @@
 import pika
 import pickle
+import requests
 from .twitch_chat import TwitchChat
 from .twitch_video import TwitchVideo
 from .twitch_highlight import TwitchHighlight
@@ -57,7 +58,7 @@ class RepitFiller:
         self.request_channel.queue_delete(queue=self.request_queue_name)
 
     def add_jobs(self, n_jobs):
-        print('in add job')
+        post_jobs_available = False
         added_jobs = 0
         while added_jobs < n_jobs:
             video_id = self.twitch_video.get_new_video_id()
@@ -77,8 +78,24 @@ class RepitFiller:
                 self.jobs_channel.basic_publish(exchange='',
                                                 routing_key=self.jobs_queue_name,
                                                 body=message)
+                if not post_jobs_available:
+                    post_jobs_available = True
+                    requests.put('http://127.0.0.1:9999/filler/jobs_available/', {'jobs_available': True})
                 added_jobs += 1
         self.collecting_jobs = False
+
+    def get_job(self):
+        method_frame, header_frame, body = self.jobs_channel.basic_get(queue=self.jobs_queue_name)
+        if method_frame.NAME == 'Basic.GetEmpty':
+            self.connection.close()
+            return ''
+        self.jobs_channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+        self.connection.close()
+        job = pickle.loads(body)
+        # TODO: st_time and end_time are numpy int32 therefore not serializable by json in the view
+        job['st_time'] = str(job['st_time'])
+        job['end_time'] = str(job['end_time'])
+        return job
 
     def run(self):
         self.request_channel.start_consuming()
