@@ -65,9 +65,6 @@ class RequestJobs(APIView):
                 filler_status.locked = True
                 filler_status.save()
                 request_jobs.delay()
-                filler_status.processing = True
-                filler_status.locked = False
-                filler_status.save()
             except Exception as e:
                 request_response = 'There was an error when starting the processing %s' % repr(e)
         data = {'filler_status': model_to_dict(filler_status), 'request_response': request_response}
