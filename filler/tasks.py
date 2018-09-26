@@ -1,10 +1,21 @@
 from __future__ import absolute_import
 from celery import shared_task
+from .models import Status
 from .repitfiller.repit_filler import RepitFiller
 
 
 @shared_task
-def get_video_candidates(n):
+def request_jobs():
     repit_filler = RepitFiller()
     repit_filler.init_jobs()
-    repit_filler.add_jobs(n)
+    status = Status.objects.get(pk=1)
+    if status.processing:
+        return
+    status.locked = False
+    status.processing = True
+    status.save()
+    repit_filler.add_jobs(100)
+    if status.locked:
+        return
+    status.processing = False
+    status.save()
