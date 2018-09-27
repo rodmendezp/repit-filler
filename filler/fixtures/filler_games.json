@@ -1,0 +1,51 @@
+[
+  {
+    "model": "filler.FillerGame",
+    "fields": {
+      "name": "PLAYERUNKNOWN'S BATTLEGROUNDS",
+      "twid": 493057
+    }
+  },
+  {
+    "model": "filler.FillerGame",
+    "fields": {
+      "name": "Fortnite",
+      "twid": 33214
+    }
+  },
+  {
+    "model": "filler.FillerGame",
+    "fields": {
+      "name": "League of Legends",
+      "twid": 21779
+    }
+  },
+  {
+    "model": "filler.FillerGame",
+    "fields": {
+      "name": "World of Warcraft",
+      "twid": 18122
+    }
+  },
+  {
+    "model": "filler.FillerGame",
+    "fields": {
+      "name": "Counter-Strike: Global Offensive",
+      "twid": 32399
+    }
+  },
+  {
+    "model": "filler.FillerGame",
+    "fields": {
+      "name": "Starcraft II",
+      "twid": 490422
+    }
+  },
+  {
+    "model": "filler.FillerGame",
+    "fields": {
+      "name": "Tibia",
+      "twid": 19619
+    }
+  }
+]

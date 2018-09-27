@@ -1,0 +1,50 @@
+[
+  {
+    "model": "filler.FillerStreamer",
+    "fields": {
+      "name": "shroud"
+    }
+  },
+  {
+    "model": "filler.FillerStreamer",
+    "fields": {
+      "name": "chocotaco"
+    }
+  },
+  {
+    "model": "filler.FillerStreamer",
+    "fields": {
+      "name": "tsm_viss"
+    }
+  },
+  {
+    "model": "filler.FillerStreamer",
+    "fields": {
+      "name": "tibia_lee"
+    }
+  },
+  {
+    "model": "filler.FillerStreamer",
+    "fields": {
+      "name": "bubbagame"
+    }
+  },
+  {
+    "model": "filler.FillerStreamer",
+    "fields": {
+      "name": "spreeezy"
+    }
+  },
+  {
+    "model": "filler.FillerStreamer",
+    "fields": {
+      "name": "drdisrespectlive"
+    }
+  },
+  {
+    "model": "filler.FillerStreamer",
+    "fields": {
+      "name": "ninja"
+    }
+  }
+]
