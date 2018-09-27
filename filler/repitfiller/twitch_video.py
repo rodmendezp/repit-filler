@@ -19,9 +19,9 @@ class TwitchVideo:
         video_id = None
         while video_id is None:
             if self.videos:
-                video_id = self.videos.pop()['id'].replace('v', '')
+                video_id = self.videos.pop(0)['id'].replace('v', '')
                 while self.video_already_exist(video_id) and self.videos:
-                    video_id = self.videos.pop()['id'].replace('v', '')
+                    video_id = self.videos.pop(0)['id'].replace('v', '')
             if not video_id:
                 self.get_new_videos()
         return video_id
