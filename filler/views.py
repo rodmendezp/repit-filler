@@ -31,7 +31,7 @@ class JobsAvailableView(APIView):
         filler_status = Status.objects.get(pk=1)
         jobs_available = request.data.get('jobs_available', None)
         if jobs_available and (jobs_available == 'True' or jobs_available == 'False'):
-            filler_status.jobs_available = bool(jobs_available)
+            filler_status.jobs_available = jobs_available == 'True'
             filler_status.save()
             return Response({'filler_status': model_to_dict(filler_status)})
         return Response({'error': 'request data need to be boolean'}, status=status.HTTP_400_BAD_REQUEST)
