@@ -101,4 +101,17 @@ class RepitFiller:
         self.request_channel.start_consuming()
 
 
+class RepitJobQueue:
+    def __init__(self):
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        self.jobs_channel_id = 2
+        self.jobs_channel = None
+
+    def jobs_available(self):
+        self.jobs_channel = self.connection.channel(self.jobs_channel_id)
+        jobs_queue = self.jobs_channel.queue_declare(queue='jobs', passive=True)
+        return jobs_queue.method.message_count >= 1
+
+    def close_connection(self):
+        self.connection.close()
 
