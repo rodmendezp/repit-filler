@@ -15,6 +15,7 @@ def request_jobs():
     status.processing = True
     status.save()
     repit_filler.add_jobs(100)
+    status = Status.objects.get(pk=1)
     if status.locked:
         return
     status.processing = False
