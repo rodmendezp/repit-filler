@@ -31,11 +31,19 @@ class TwitchHighlight:
 
     @staticmethod
     def filter_segments(y, sts, ends):
+        sts, ends = TwitchHighlight.remove_no_len_segment(sts, ends)
         features = TwitchHighlight.get_segments_features(y, sts, ends)
         gmm = TwitchHighlight.fit_gmm(features)
         indexes = TwitchHighlight.get_high_rate_msgs(features, gmm)
         sts = np.array(sts)[indexes]
         ends = np.array(ends)[indexes]
+        return sts, ends
+
+    @staticmethod
+    def remove_no_len_segment(sts, ends):
+        diff_not_zero = [(ends[i] - sts[i]) != 0 for i in range(len(sts))]
+        sts = [sts[i] for i in range(len(sts)) if diff_not_zero[i]]
+        ends = [ends[i] for i in range(len(sts)) if diff_not_zero[i]]
         return sts, ends
 
     # TODO: Add description
