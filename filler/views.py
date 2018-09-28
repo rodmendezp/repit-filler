@@ -1,7 +1,9 @@
-from django.http import JsonResponse
+from rest_framework import status, generics
 from django.forms.models import model_to_dict
-from rest_framework import status
+from django.http import JsonResponse
 from rest_framework.views import APIView, Response
+
+from .serializers import *
 from .tasks import request_jobs
 from .models import Status
 from .repitfiller.repit_filler import RepitFiller
@@ -111,6 +113,16 @@ class ClearJobs(APIView):
         filler_status.jobs_available = True
         filler_status.save()
         return JsonResponse({'filler_status': model_to_dict(filler_status)})
+
+
+class FillerGameList(generics.ListCreateAPIView):
+    queryset = FillerGame.objects.all()
+    serializer_class = FillerGameSerializer
+
+
+class FillerStreamerList(generics.ListAPIView):
+    queryset = FillerStreamer.objects.all()
+    serializer_class = FillerStreamerSerializer
 
 
 
