@@ -120,9 +120,26 @@ class FillerGameList(generics.ListCreateAPIView):
     serializer_class = FillerGameSerializer
 
 
-class FillerStreamerList(generics.ListAPIView):
+class FillerStreamerList(generics.ListCreateAPIView):
     queryset = FillerStreamer.objects.all()
     serializer_class = FillerStreamerSerializer
 
 
+class VideoList(generics.ListCreateAPIView):
+    queryset = Video.objects.all()
+    serializer_class = VideoSerializer
 
+
+class VideoDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Video.objects.all()
+    serializer_class = VideoSerializer
+
+
+class CandidateList(generics.ListCreateAPIView):
+    queryset = Candidate.objects.all()
+    serializer_class = CandidateSerializer
+
+
+class CandidateDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Candidate.objects.all()
+    serializer_class = CandidateSerializer
