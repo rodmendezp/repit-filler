@@ -90,7 +90,7 @@ class RepitTwitchAPI:
         return emoticons
 
     def get_streamer_videos(self, params):
-        # Broadcast type
+        # Broadcast type archive are the streaming session saved
         channel_twid = params.get('channel_twid', None)
         streamer_name = params.get('streamer_name', None)
         if not channel_twid and not streamer_name:
