@@ -1,6 +1,4 @@
-import pika
 from django.apps import AppConfig
-from filler.repitfiller.repit_filler import RepitJobQueue
 
 
 class FillerConfig(AppConfig):
@@ -12,6 +10,7 @@ class FillerConfig(AppConfig):
 
     @staticmethod
     def reset_status():
+        from filler.repitfiller.repit_filler import RepitJobQueue
         from .models import Status
         status = Status.objects.get(pk=1)
         repit_job_queue = RepitJobQueue()
