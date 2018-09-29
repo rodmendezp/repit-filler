@@ -1,27 +1,16 @@
 import pika
 import pickle
 import requests
+from datetime import time
+from filler.models import Candidate, Video
 from .twitch_chat import TwitchChat
 from .twitch_video import TwitchVideo
 from .twitch_highlight import TwitchHighlight
 
 
-'''
-
-'''
-# This service use two channels to operate
-# 1) Request Channel: It is used to ask for more jobs. Once the queue inside the request channel has a message
-# it will get the message and produce at least the number of jobs requested
-# 2) Jobs Channel: It is used to post jobs in a queue which are going to be consumed by the Repit app
-
-
 class RepitFiller:
     def __init__(self):
         self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-        self.request_channel = None
-        self.request_channel_id = 1
-        self.request_queue_name = 'requested_jobs'
-        self.request_queue = None
         self.jobs_channel = None
         self.jobs_channel_id = 2
         self.jobs_queue_name = 'jobs'
@@ -32,45 +21,32 @@ class RepitFiller:
         self.twitch_video = TwitchVideo()
         self.twitch_highlight = None
 
-    def init_request(self):
-        self.request_channel = self.connection.channel(self.request_channel_id)
-        self.request_queue = self.request_channel.queue_declare(queue=self.request_queue_name, durable=True)
-        self.request_channel.basic_consume(self.request_channel_callback, queue=self.request_queue_name, no_ack=False)
-
     def init_jobs(self):
         self.jobs_channel = self.connection.channel(self.jobs_channel_id)
         self.jobs_queue = self.jobs_channel.queue_declare(queue=self.jobs_queue_name, durable=True)
 
-    def request_channel_callback(self, ch, method, properties, body):
-        if self.collecting_jobs:
-            return
-        self.collecting_jobs = True
-        self.initial_jobs = self.jobs_queue.method.message_count
-        body_pickle = pickle.loads(body)
-        self.add_jobs(body_pickle['n_jobs'])
-
-    def delete_queues(self):
+    def delete_queue(self):
         if not self.jobs_channel:
             self.init_jobs()
-        if not self.request_channel:
-            self.init_request()
         self.jobs_channel.queue_delete(queue=self.jobs_queue_name)
-        self.request_channel.queue_delete(queue=self.request_queue_name)
 
     def add_jobs(self, n_jobs):
         post_jobs_available = False
         added_jobs = 0
         while added_jobs < n_jobs:
-            video_id = self.twitch_video.get_new_video_id()
-            if not video_id:
-                print('There was an error getting a new video_id')
+            video = self.twitch_video.get_new_video()
+            self.twitch_video.post_video_repit_data(video)
+            if not video:
+                print('There was an error getting a new video')
                 break
-            self.twitch_chat = TwitchChat(video_id, self.twitch_video.settings['client_id'])
+            video_twid = video['id'].replace('v', '')
+            self.twitch_chat = TwitchChat(video_twid, self.twitch_video.settings['client_id'])
             self.twitch_highlight = TwitchHighlight(self.twitch_chat.get_messages_timestamp())
             candidates = self.twitch_highlight.get_candidates()
+            self.post_candidates(candidates, video_twid)
             for candidate in candidates:
                 message = {
-                    'video_id': video_id,
+                    'video_id': video_twid,
                     'st_time': candidate.st,
                     'end_time': candidate.end
                 }
@@ -84,6 +60,13 @@ class RepitFiller:
                 added_jobs += 1
         self.collecting_jobs = False
 
+    def post_candidates(self, candidates, video_twid):
+        video = Video.objects.get(twid=video_twid)
+        for candidate in candidates:
+            st_time = time(**self.twitch_video.seconds_to_h_m_s(int(candidate.st)))
+            end_time = time(**self.twitch_video.seconds_to_h_m_s(int(candidate.end)))
+            Candidate.objects.create(video=video, start=st_time, end=end_time)
+
     def get_job(self):
         method_frame, header_frame, body = self.jobs_channel.basic_get(queue=self.jobs_queue_name)
         if method_frame.NAME == 'Basic.GetEmpty':
@@ -96,9 +79,6 @@ class RepitFiller:
         job['st_time'] = str(job['st_time'])
         job['end_time'] = str(job['end_time'])
         return job
-
-    def run(self):
-        self.request_channel.start_consuming()
 
 
 class RepitJobQueue:
