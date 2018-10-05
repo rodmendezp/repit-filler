@@ -70,15 +70,17 @@ class RepitFiller:
     def get_job(self):
         method_frame, header_frame, body = self.jobs_channel.basic_get(queue=self.jobs_queue_name)
         if method_frame.NAME == 'Basic.GetEmpty':
-            self.connection.close()
             return ''
-        self.jobs_channel.basic_ack(delivery_tag=method_frame.delivery_tag)
-        self.connection.close()
         job = pickle.loads(body)
         # TODO: st_time and end_time are numpy int32 therefore not serializable by json in the view
         job['st_time'] = str(job['st_time'])
         job['end_time'] = str(job['end_time'])
+        job['delivery_tag'] = str(method_frame.delivery_tag)
         return job
+
+    def ack_job(self, delivery_tag):
+        self.jobs_channel.basic_ack(delivery_tag=delivery_tag)
+        return {'status': 'SUCCEED'}
 
 
 class RepitJobQueue:
@@ -91,6 +93,11 @@ class RepitJobQueue:
         self.jobs_channel = self.connection.channel(self.jobs_channel_id)
         jobs_queue = self.jobs_channel.queue_declare(queue='jobs', passive=True)
         return jobs_queue.method.message_count >= 1
+
+    def get_message_count(self):
+        self.jobs_channel = self.connection.channel(self.jobs_channel_id)
+        jobs_queue = self.jobs_channel.queue_declare(queue='jobs', passive=True)
+        return jobs_queue.method.message_count
 
     def close_connection(self):
         self.connection.close()
