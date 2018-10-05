@@ -1,23 +1,30 @@
 from rest_framework import status, generics
 from django.forms.models import model_to_dict
 from django.http import JsonResponse
+from django.apps import apps
 from rest_framework.views import APIView, Response
 
 from .serializers import *
 from .tasks import request_jobs
 from .models import Status
-from .repitfiller.repit_filler import RepitFiller
+from .repitfiller.repit_filler import RepitJobQueue
+
+
+def ack_job(delivery_tag):
+    repit_filler = apps.get_app_config('filler').repit_filler
+    response = repit_filler.ack_job(int(delivery_tag))
+    return response
 
 
 def get_job():
-    repit_filler = RepitFiller()
-    repit_filler.init_jobs()
-    if repit_filler.jobs_queue.method.message_count == 1:
+    repit_job_queue = RepitJobQueue()
+    message_count = repit_job_queue.get_message_count()
+    if message_count == 1:
         filler_status = Status.objects.get(pk=1)
         filler_status.jobs_available = False
         filler_status.save()
-    elif repit_filler.jobs_queue.method.message_count == 0:
-        return ''
+    repit_job_queue.close_connection()
+    repit_filler = apps.get_app_config('filler').repit_filler
     return repit_filler.get_job()
 
 
@@ -37,6 +44,13 @@ class JobsAvailableView(APIView):
             filler_status.save()
             return Response({'filler_status': model_to_dict(filler_status)})
         return Response({'error': 'request data need to be boolean'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, format=None):
+        delivery_tag = request.data.get('delivery_tag', None)
+        if not delivery_tag:
+            return Response({'error': 'no delivery_tag'}, status=status.HTTP_400_BAD_REQUEST)
+        response = ack_job(delivery_tag)
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class StatusView(APIView):
