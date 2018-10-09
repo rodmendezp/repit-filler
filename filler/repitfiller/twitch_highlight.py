@@ -155,6 +155,8 @@ class TwitchHighlight:
         cv_types = ['spherical', 'tied', 'diag', 'full']
         for cv_type in cv_types:
             for n in range(1, 4):
+                if data.shape[0] < n:
+                    continue
                 gmm = GaussianMixture(n_components=n, covariance_type=cv_type)
                 gmm.fit(data)
                 bic.append(gmm.bic(data))
