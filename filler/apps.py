@@ -14,7 +14,7 @@ class FillerConfig(AppConfig):
         return table_name in connection.introspection.table_names()
 
     def ready(self):
-        if self.db_table_exists('filler_status'):
+        if self.db_table_exists('filler_gamequeuestatus'):
             self.reset_status()
         self.init_repit_filler()
         super().ready()
@@ -22,19 +22,19 @@ class FillerConfig(AppConfig):
     @staticmethod
     def reset_status():
         from filler.repitfiller.repit_filler import RepitJobQueue
-        from .models import Status
-        try:
-            status = Status.objects.get(pk=1)
-        except Status.DoesNotExist:
-            status = Status.objects.create(processing=False, locked=False, jobs_available=False)
-        repit_job_queue = RepitJobQueue()
-        status.jobs_available = repit_job_queue.jobs_available()
-        status.locked = False
-        status.processing = False
-        status.save()
-        repit_job_queue.close_connection()
+        from .models import GameQueueStatus, CustomQueueStatus
+        game_queues = GameQueueStatus.objects.all()
+        for game_queue in game_queues:
+            repit_job_queue = RepitJobQueue(game_queue.game)
+            game_queue.jobs_available = repit_job_queue.jobs_available()
+            game_queue.processing = False
+            game_queue.locked = False
+            game_queue.save()
+            repit_job_queue.close_connection()
+        custom_queues = CustomQueueStatus.objects.all()
+        custom_queues.delete()
 
     def init_repit_filler(self):
         from filler.repitfiller.repit_filler import RepitFiller
         self.repit_filler = RepitFiller()
-        self.repit_filler.init_jobs()
+        self.repit_filler.init()
