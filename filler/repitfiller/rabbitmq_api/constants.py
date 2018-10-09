@@ -1,0 +1,1 @@
+BASE_URL = 'http://localhost:15672/api/'
