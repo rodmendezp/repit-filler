@@ -2,6 +2,18 @@ from rest_framework import serializers
 from filler.models import *
 
 
+class GameQueueStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameQueueStatus
+        fields = ('id', 'game', 'processing', 'locked', 'jobs_available')
+
+
+class CustomQueueStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomQueueStatus
+        fields = ('id', 'game', 'streamer', 'user', 'processing', 'locked', 'jobs_available')
+
+
 class FillerGameSerializer(serializers.ModelSerializer):
     class Meta:
         model = FillerGame
@@ -17,12 +29,4 @@ class FillerStreamerSerializer(serializers.ModelSerializer):
 class VideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
-        fields = ('twid', 'candidates')
-
-
-class CandidateSerializer(serializers.ModelSerializer):
-    video = VideoSerializer
-
-    class Meta:
-        model = Candidate
-        fields = ('video', 'start', 'end', 'ack')
+        fields = ('twid', )
