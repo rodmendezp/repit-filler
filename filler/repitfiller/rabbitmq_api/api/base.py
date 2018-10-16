@@ -1,4 +1,5 @@
 import requests
+from rest_framework import status
 from requests.compat import urljoin
 from ..constants import BASE_URL
 
@@ -18,6 +19,6 @@ class RabbitAPI(object):
         url = urljoin(url, path)
         headers = self._get_request_headers()
         response = requests.get(url, params=params, headers=headers, auth=(self.user, self.password))
-        if json:
+        if response.status_code == status.HTTP_200_OK and json:
             return response.json()
         return response
