@@ -17,10 +17,6 @@ class QueueAPI(RabbitAPI):
                 queues.append(queue)
         return queues
 
-    def queue_exists(self):
-        response = self._request_get(self.path)
-        pass
-
     def get_queue_bindings(self, name, exchange='', vhost='/'):
         vhost = quote(vhost, '')
         path = '%s/%s/%s/bindings' % (self.path, vhost, name)
@@ -30,3 +26,14 @@ class QueueAPI(RabbitAPI):
         else:
             binding = list(filter(lambda x: x['destination'] != x['routing_key'], response))
         return binding[0]['routing_key'] if len(binding) == 1 else None
+
+    def get_queue_message_count(self, name, vhost='/'):
+        vhost = quote(vhost, '')
+        path = '%s/%s/%s' % (self.path, vhost, name)
+        response = self._request_get(path)
+        return response.get('messages', None)
+
+    def tasks_available(self, name, vhost='/'):
+        tasks = self.get_queue_message_count(name, vhost)
+        return tasks > 0
+
