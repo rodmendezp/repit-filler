@@ -65,7 +65,7 @@ class TwitchVideo:
         return self.repit_twitch_client.video.post_object(data)
 
     # TODO: Add a way to not check all videos again
-    def get_new_videos(self):
+    def get_new_videos(self, game, streamer=''):
         self.game = self.get_twitch_game(self.settings['video']['game'])
         for streamer in self.settings['video']['streamer_priorities']:
             offset = 0
