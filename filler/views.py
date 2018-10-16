@@ -7,23 +7,23 @@ from rest_framework.views import APIView, Response
 from .serializers import *
 from .models import GameQueueStatus, CustomQueueStatus
 from .tasks import request_jobs
-from .repitfiller.repit_filler import RepitJobQueue
+from .repitfiller.repit_filler import RepitTaskQueue
 
 
 def ack_job(delivery_tag):
     repit_filler = apps.get_app_config('filler').repit_filler
-    response = repit_filler._ack_task(int(delivery_tag))
+    response = repit_filler.ack_task(int(delivery_tag))
     return response
 
 
 def get_job(game, streamer='', user=''):
-    repit_job_queue = RepitJobQueue(game, streamer, user)
-    message_count = repit_job_queue.get_message_count()
+    repit_task_queue = RepitTaskQueue()
+    queue = RepitTaskQueue.params_to_queue_name(game, streamer, user)
+    message_count = repit_task_queue.get_message_count(queue)
     if message_count == 1:
         filler_queue_status = get_queue_status(game, streamer, user)
         filler_queue_status.jobs_available = False
         filler_queue_status.save()
-    repit_job_queue.close_connection()
     repit_filler = apps.get_app_config('filler').repit_filler
     return repit_filler.get_job(game, streamer, user)
 
