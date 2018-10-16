@@ -21,16 +21,20 @@ class FillerConfig(AppConfig):
 
     @staticmethod
     def reset_status():
-        from filler.repitfiller.repit_filler import RepitJobQueue
+        from filler.repitfiller.repit_filler import RepitTaskQueue
+        from filler.repitfiller.utils import params_to_queue_name
         from .models import GameQueueStatus, CustomQueueStatus
         game_queues = GameQueueStatus.objects.all()
+        repit_task_queue = RepitTaskQueue()
+        print()
         for game_queue in game_queues:
-            repit_job_queue = RepitJobQueue(game_queue.game)
-            game_queue.jobs_available = repit_job_queue.jobs_available()
+            queue = params_to_queue_name(game_queue.game)
+            print('Messages in queue %s: %s' % (queue, repit_task_queue.get_message_count(queue)))
+            game_queue.jobs_available = repit_task_queue.tasks_available(queue)
             game_queue.processing = False
             game_queue.locked = False
             game_queue.save()
-            repit_job_queue.close_connection()
+        print()
         custom_queues = CustomQueueStatus.objects.all()
         custom_queues.delete()
 
