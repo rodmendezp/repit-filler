@@ -1,3 +1,4 @@
+from rest_framework import status
 from .base import RabbitAPI
 
 
@@ -6,8 +7,10 @@ class BindingAPI(RabbitAPI):
         self.path = 'bindings'
         super().__init__()
 
-    def get_bindings(self):
+    def get_bindings(self, prefix=''):
         response = self._request_get(self.path)
+        if response.status_code != status.HTTP_200_OK:
+            return None
         queues = []
         for queue in response.json():
             if not prefix:
