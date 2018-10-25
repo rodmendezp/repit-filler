@@ -1,8 +1,10 @@
 import os
 import json
+import random
 from datetime import time
-from repitapi.client import RepitClient
 from filler.models import Video
+from repitapi.client import RepitClient
+from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from .repit_twitch_api import RepitTwitchAPI
 
@@ -15,22 +17,24 @@ class TwitchVideo:
         with open(settings_path, 'r') as f:
             self.settings = json.load(f)
         self.twitch_client = RepitTwitchAPI()
-        self.game = None
         self.videos = []
-        self.twitch_api_limit = 99
+        self.video_info = {
+            'game': None,
+            'streamer': None,
+        }
+        self.twitch_api_limit = 10
 
-    def get_new_video(self):
+    def get_new_video(self, game, streamer):
         video = None
         while video is None:
-            if not self.videos:
-                self.get_new_videos()
+            if not self.videos or (self.video_info['game'] != game and self.video_info['streamer']):
+                self.get_new_videos(game, streamer)
             while self.videos:
                 check_video = self.videos.pop(0)
                 if not self.past_video(check_video['id'].replace('v', '')):
-                    video = check_video
-                    break
-        Video.objects.create(twid=video['id'].replace('v', ''))
-        return video
+                    Video.objects.create(twid=check_video['id'].replace('v', ''))
+                    return check_video
+        return None
 
     @staticmethod
     def past_video(video_id):
@@ -57,45 +61,86 @@ class TwitchVideo:
             'twid': video['id'].replace('v', ''),
             'streamer_twid': video['channel']['id'],
             'streamer_name': video['channel']['name'],
-            'game_twid': self.game['id'],
-            'game_name': video['game'],
+            'game_twid': self.get_twitch_game_id(self.video_info['game']),
+            'game_name': self.video_info['game'],
             'recorded': json.dumps(video['created_at'], cls=DjangoJSONEncoder),
             'length': json.dumps(time(**self.seconds_to_h_m_s(video['length'])), cls=DjangoJSONEncoder)
         }
         return self.repit_twitch_client.video.post_object(data)
 
-    # TODO: Add a way to not check all videos again
-    def get_new_videos(self, game, streamer=''):
-        self.game = self.get_twitch_game(self.settings['video']['game'])
-        for streamer in self.settings['video']['streamer_priorities']:
-            offset = 0
-            params = {
-                'streamer_name': streamer,
-                'limit': self.twitch_api_limit,
-                'offset': offset,
-            }
+    def get_random_top_game(self):
+        limit = 10
+        games = self.get_twitch_games(limit)
+        game = None
+        while game is None:
+            randint = random.randint(0, limit - 1)
+            if games[randint] == 'Just Chatting':
+                continue
+            game = games[randint]
+        return game
+
+    def get_random_top_streamer(self, game, limit=10):
+        streamers = None
+        offset = 0
+        while not streamers:
+            streamers = self.twitch_client.client.streams.get_live_streams(game=game, limit=limit,
+                                                                           language='en', offset=offset)
+            streamers = list(filter(lambda x: x['channel']['broadcaster_language'] == 'en', streamers))
+            offset += limit
+        randint = random.randint(0, len(streamers) - 1)
+        return streamers[randint]['channel']['name']
+
+    def get_new_videos(self, game=None, streamer=None):
+        if not game:
+            game = self.get_random_top_game()
+        if not streamer:
+            streamer = self.get_random_top_streamer(game)
+        videos = None
+        offset = 0
+        params = {
+            'streamer_name': streamer,
+            'limit': self.twitch_api_limit,
+        }
+        break_loop = False
+        while videos is None or len(videos) == 0:
+            params['offset'] = offset
             videos = self.twitch_client.get_streamer_videos(params)
-            # Skip videos which are not from specified game
-            videos = list(filter(lambda x: x['game'] == self.settings['video']['game'], videos))
-            while videos:
-                for i, video in enumerate(videos):
-                    video_twid = video['id'].replace('v', '')
-                    if self.repit_twitch_client.video.get_objects({'twid': video_twid}):
-                        continue
-                    self.videos = videos[i:]
-                    return
-                if len(videos) != self.twitch_api_limit:
-                    # If videos retrieved are less than api limit then there are no more videos
-                    break
-                offset += self.twitch_api_limit
-                params['offset'] = offset
-                videos = self.twitch_client.get_streamer_videos(params)
-                videos = list(filter(lambda x: x['game'] == self.settings['video']['game'], videos))
-        return None
+            if len(videos) != self.twitch_api_limit:
+                break_loop = True
+            videos = list(filter(lambda x: x['game'] == game, videos))
+            # videos = list(filter(lambda x: x['length'] <= 3600, videos))
+            videos = list(filter(lambda x: x['status'] != 'recording', videos))
+            if not settings.NO_CELERY:
+                videos = self.remove_existing_videos(videos)
+            if break_loop:
+                break
+            offset += self.twitch_api_limit
+        self.videos = videos
+        self.video_info['game'] = game
+        self.video_info['streamer'] = streamer
+        return
+
+    def remove_existing_videos(self, videos):
+        i = 0
+        while i < len(videos):
+            video_twid = videos[i]['id'].replace('v', '')
+            if self.repit_twitch_client.video.get_objects({'twid': video_twid}):
+                videos.pop(i)
+            else:
+                i += 1
+        return videos
 
     def get_twitch_game(self, game_name):
+        games = self.get_twitch_games()
+        game = list(filter(lambda x: x == game_name, games))
+        return game[0] if len(game) == 1 else None
+
+    def get_twitch_game_id(self, game_name):
         games = self.twitch_client.client.games.get_top(limit=100)
         games = list(filter(lambda x: x['game']['name'] == game_name, games))
-        if len(games) == 0:
-            return None
-        return games[0]['game']
+        return games[0]['game']['id'] if len(games) == 1 else None
+
+    def get_twitch_games(self, limit=100):
+        games = self.twitch_client.client.games.get_top(limit=limit)
+        games = list(map(lambda x: x['game']['name'], games))
+        return games
