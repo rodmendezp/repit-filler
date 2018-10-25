@@ -2,6 +2,7 @@ import pika
 import pickle
 import requests
 from rest_framework import status
+from django.conf import settings
 
 from . import constants
 from .twitch_chat import TwitchChat
@@ -20,6 +21,7 @@ class RepitFiller:
         self.routing_keys = []
         self.game = None
         self.streamer = None
+        self.user = None
         self.rabbitmq_client = RabbitMQClient()
         self.twitch_video = TwitchVideo()
 
@@ -53,7 +55,7 @@ class RepitFiller:
         self.routing_keys.append(routing_key)
 
     def delete_queue(self, queue, routing_key=''):
-        if queue not in self.queues:
+        if queue[0] != '_' and queue not in self.queues:
             print('Queue "%s" is not is queue list' % queue)
             return
         if not routing_key:
@@ -75,6 +77,7 @@ class RepitFiller:
     def add_tasks_custom(self, game, user, streamer='', total_tasks=constants.TASKS_CUSTOM):
         self.game = game
         self.streamer = streamer
+        self.user = user
         if streamer:
             routing_key = params_to_routing_key(game, streamer, user)
             queue = params_to_queue_name(game, streamer, user)
@@ -82,7 +85,7 @@ class RepitFiller:
             routing_key = params_to_routing_key(game, user=user)
             queue = params_to_queue_name(game, user=user)
         self.create_queue(queue)
-        self.create_binding(routing_key, queue)
+        self.create_binding(queue, routing_key)
         self.add_tasks(routing_key, total_tasks)
 
     def add_candidates(self, candidates, video_twid, routing_key):
@@ -103,7 +106,8 @@ class RepitFiller:
             if not video:
                 print('There was an error getting a new video')
                 break
-            self.twitch_video.post_video_repit_data(video)
+            if not settings.NO_CELERY:
+                self.twitch_video.post_video_repit_data(video)
             video_twid = video['id'].replace('v', '')
             print('Got video = %s' % video_twid)
             twitch_chat = TwitchChat(video_twid, self.twitch_video.settings['client_id'])
@@ -114,7 +118,7 @@ class RepitFiller:
             print('New Tasks = ', new_tasks)
             if new_tasks == 0:
                 print('Before _update_queue_jobs_available')
-                self.update_queue_jobs_available(self.game, streamer, user)
+                self.update_queue_jobs_available(self.game, self.streamer or streamer, self.user or user)
             new_tasks += len(candidates)
         return
 
@@ -129,17 +133,21 @@ class RepitFiller:
         return response
 
     def clear_custom_queue(self, queue):
-        routing_key = self.get_queue_bindings(queue)
+        routing_key = self.get_queue_bindings(queue['name'])
         game, _, _ = routing_key_to_params(routing_key)
+        game_queue = params_to_queue_name(game)
         game_routing_key = params_to_routing_key(game)
         tasks_left = True
+        if game_queue not in self.queues:
+            self.create_queue(game_queue)
         while tasks_left:
-            method, _, body = self.channel.basic_get(queue=queue)
-            if method.NAME == 'Basic.GetEmpty':
+            method, _, body = self.channel.basic_get(queue=queue['name'])
+            if not method or method.NAME == 'Basic.GetEmpty':
                 break
             self.channel.basic_ack(delivery_tag=method.delivery_tag)
             self.channel.basic_publish(exchange=constants.EXCHANGE_NAME, routing_key=game_routing_key, body=body)
             tasks_left = method.message_count > 0
+        self.delete_queue(queue['name'])
         return
 
     def clear_all_custom_queue(self):
@@ -161,6 +169,12 @@ class RepitFiller:
     def ack_task(self, delivery_tag):
         self.channel.basic_ack(delivery_tag=delivery_tag)
         return {'status': 'SUCCEED'}
+
+    def get_game_streamers(self, game, limit=10):
+        streamers = self.twitch_video.twitch_client.client.streams.get_live_streams(game=game, language='en')
+        streamers = list(filter(lambda x: x['channel']['broadcaster_language'] == 'en', streamers))
+        streamers = list(map(lambda x: x['channel']['name'], streamers))
+        return streamers[:limit] if len(streamers) > limit else streamers
 
     def close_connection(self):
         if self.connection:
