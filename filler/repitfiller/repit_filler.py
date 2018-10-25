@@ -18,6 +18,8 @@ class RepitFiller:
         self.queues = []
         self.queues_id = {}
         self.routing_keys = []
+        self.game = None
+        self.streamer = None
         self.rabbitmq_client = RabbitMQClient()
         self.twitch_video = TwitchVideo()
 
@@ -62,6 +64,7 @@ class RepitFiller:
 
     def add_tasks_game(self, game, total_tasks=constants.TASKS_GAME):
         print('Start add tasks game = %s' % game)
+        self.game = game
         routing_key = params_to_routing_key(game)
         if routing_key not in self.routing_keys:
             queue = params_to_queue_name(game)
@@ -70,6 +73,8 @@ class RepitFiller:
         self.add_tasks(routing_key, total_tasks)
 
     def add_tasks_custom(self, game, user, streamer='', total_tasks=constants.TASKS_CUSTOM):
+        self.game = game
+        self.streamer = streamer
         if streamer:
             routing_key = params_to_routing_key(game, streamer, user)
             queue = params_to_queue_name(game, streamer, user)
@@ -94,7 +99,7 @@ class RepitFiller:
         new_tasks = 0
         game, streamer, user = routing_key_to_params(routing_key)
         while new_tasks < total_tasks:
-            video = self.twitch_video.get_new_video()
+            video = self.twitch_video.get_new_video(self.game, self.streamer)
             if not video:
                 print('There was an error getting a new video')
                 break
@@ -109,7 +114,7 @@ class RepitFiller:
             print('New Tasks = ', new_tasks)
             if new_tasks == 0:
                 print('Before _update_queue_jobs_available')
-                self.update_queue_jobs_available(game, streamer, user)
+                self.update_queue_jobs_available(self.game, streamer, user)
             new_tasks += len(candidates)
         return
 
@@ -145,7 +150,7 @@ class RepitFiller:
     def get_job(self, game, streamer, user):
         queue = params_to_queue_name(game, streamer, user)
         method, _, body = self.channel.basic_get(queue=queue)
-        if method.NAME == 'Basic.GetEmpty':
+        if not method or method.NAME == 'Basic.GetEmpty':
             return 'EMPTY'
         task = pickle.loads(body)
         task['st_time'] = str(task['st_time'])

@@ -14,9 +14,10 @@ class FillerConfig(AppConfig):
         return table_name in connection.introspection.table_names()
 
     def ready(self):
+        self.init_repit_filler()
+        self.repit_filler.clear_all_custom_queue()
         if self.db_table_exists('filler_gamequeuestatus'):
             self.reset_status()
-        self.init_repit_filler()
         super().ready()
 
     @staticmethod
@@ -26,6 +27,8 @@ class FillerConfig(AppConfig):
         from .models import GameQueueStatus, CustomQueueStatus
         game_queues = GameQueueStatus.objects.all()
         repit_task_queue = RepitTaskQueue()
+        custom_queues = CustomQueueStatus.objects.all()
+        custom_queues.delete()
         print()
         for game_queue in game_queues:
             queue = params_to_queue_name(game_queue.game)
@@ -35,8 +38,6 @@ class FillerConfig(AppConfig):
             game_queue.locked = False
             game_queue.save()
         print()
-        custom_queues = CustomQueueStatus.objects.all()
-        custom_queues.delete()
 
     def init_repit_filler(self):
         from filler.repitfiller.repit_filler import RepitFiller
