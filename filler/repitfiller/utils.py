@@ -9,6 +9,12 @@ def replace_game_characters(game):
     return game.replace('.', '_').lower()
 
 
+def replace_user_characters(user):
+    user = user.replace('.', '_')
+    user = user.replace('@', '_')
+    return user.lower()
+
+
 def params_to_queue_name(game, streamer='', user=''):
     game = replace_game_characters(game)
     if streamer or user:
@@ -20,6 +26,7 @@ def params_to_queue_name(game, streamer='', user=''):
 
 def params_to_routing_key(game, streamer='*', user='all'):
     game = replace_game_characters(game)
+    user = replace_user_characters(user)
     routing_key = '%s.%s.%s' % (game, streamer, user)
     return routing_key
 
@@ -29,6 +36,7 @@ def routing_key_to_params(routing_key):
     second_dot = routing_key.find('.', first_dot + 1)
     game = routing_key[:first_dot]
     streamer = routing_key[first_dot + 1: second_dot]
+    streamer = '' if streamer == '*' else streamer
     user = routing_key[second_dot + 1:]
     user = '' if user == 'all' else user
     return game, streamer, user
