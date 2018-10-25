@@ -2,13 +2,14 @@ import os
 import re
 from six.moves import xrange
 from repitapi.client import RepitClient
-from twitchchatdl.app.downloader import download
 from .repit_twitch_api import RepitTwitchAPI
+from django.forms.models import model_to_dict
+from twitchchatdl.app.downloader import download
 from requests.exceptions import ConnectionError, HTTPError
 
 
 class TwitchChat:
-    def __init__(self, video_id, client_id):
+    def __init__(self, video_id, client_id, file_path=None):
         self.video_id = video_id
         self.client_id = client_id
         self.file_name = None
@@ -20,7 +21,13 @@ class TwitchChat:
         self.user_names = set()
         self.twitch_users_db = {}
         self.repit_twitch_data = {}
-        self.download()
+        if file_path:
+            self.file_path = file_path
+            self.file_name = os.path.split(self.file_path)[1]
+            path, _ = os.path.split(self.file_path)
+            self.streamer_name = os.path.split(path)[1]
+        else:
+            self.download()
         self.parse_file()
 
     def download(self):
@@ -45,6 +52,8 @@ class TwitchChat:
             if len(twitch_users) > 1:
                 print('WARNING: TwitchUser query returned more than 1 result (twitch_user.name = %s)' % user_name)
                 continue
+            elif len(twitch_users) == 0:
+                continue
             self.twitch_users_db[user_name] = twitch_users[0]
         names_to_add = list(filter(lambda x: x not in self.twitch_users_db.keys(), self.user_names))
         if not names_to_add:
@@ -54,7 +63,7 @@ class TwitchChat:
                 twitch_users = self.twitch_client.client.users.translate_usernames_to_ids(user_names_group)
                 for twitch_user in twitch_users:
                     data = {
-                        'twid': twitch_user['twid'],
+                        'twid': twitch_user['id'],
                         'name': twitch_user['name']
                     }
                     new_twitch_user = self.repit_twitch_client.twitch_user.post_object(data)
@@ -65,16 +74,36 @@ class TwitchChat:
                 print('There was a HTTPError')
 
     def post_streamer(self):
+        streamer = self.repit_twitch_client.streamer.get_objects({'name': self.streamer_name})
+        if streamer and len(streamer) == 1:
+            self.repit_twitch_data['streamer'] = streamer[0]
+            return streamer[0]
         streamer = self.twitch_client.get_streamer(self.streamer_name)
-        response = self.repit_twitch_client.streamer.post_object(streamer)
+        channel = self.repit_twitch_client.channel.get_objects({'twid': streamer['channel']['twid']})
+        twitch_user = self.repit_twitch_client.twitch_user.get_objects({'name': self.streamer_name})
+        data = {}
+        if twitch_user and len(twitch_user) == 1:
+            data['twitch_user'] = {'id': twitch_user[0].id}
+        else:
+            data['twitch_user'] = streamer['twitch_user']
+        if channel and len(channel) == 1:
+            data['channel'] = {'id': channel[0].id}
+        else:
+            data['channel'] = streamer['channel']
+        response = self.repit_twitch_client.streamer.post_object(data)
         self.repit_twitch_data['streamer'] = response
         return response
 
     def post_video(self):
-        video = self.twitch_client.get_video(self.video_id)
-        response = self.repit_twitch_client.video.post_object(video)
-        self.repit_twitch_data['video'] = response
-        return response
+        video = self.repit_twitch_client.video.get_objects({'twid': self.video_id})
+        if video and len(video) == 1:
+            video = video[0]
+            self.repit_twitch_data['video'] = {'id': video.id}
+        else:
+            video = self.twitch_client.get_video(self.video_id)
+            video = self.repit_twitch_client.video.post_object(video)
+            self.repit_twitch_data['video'] = video
+        return video
 
     def post_chat(self):
         chat = {'video': self.repit_twitch_data['video']}
@@ -102,8 +131,8 @@ class TwitchChat:
     def add_to_repit_twitch_data(self):
         self.post_users()
         self.post_streamer()
-        self.post_chat()
         self.post_video()
+        self.post_chat()
         self.post_messages()
 
     def get_messages_timestamp(self):
