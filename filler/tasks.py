@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from django.apps import apps
 from celery import shared_task
 from .models import GameQueueStatus, CustomQueueStatus
-from .repitfiller.repit_filler import RepitFiller
 
 
 @shared_task
