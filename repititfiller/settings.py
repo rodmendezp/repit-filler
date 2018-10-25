@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'filler.apps.FillerConfig',
+    'django_extensions',
     'rest_framework',
     'corsheaders',
 ]
@@ -138,3 +139,6 @@ CORS_ORIGIN_WHITELIST = (
     'http://127.0.0.1:8000',
 )
 
+NO_CELERY = False
+
+TWITCH_CLIENT_ID = 'z7zaxcz22r4vzpdji9j2yxifzc63pl'
