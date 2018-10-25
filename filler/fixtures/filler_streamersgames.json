@@ -1,0 +1,128 @@
+[
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 1,
+      "game": 1
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 1,
+      "game": 2
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 1,
+      "game": 4
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 1,
+      "game": 5
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 1,
+      "game": 8
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 2,
+      "game": 1
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 2,
+      "game": 8
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 2,
+      "game": 9
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 3,
+      "game": 1
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 3,
+      "game": 2
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 4,
+      "game": 7
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 5,
+      "game": 7
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 6,
+      "game": 1
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 7,
+      "game": 1
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 7,
+      "game": 2
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 7,
+      "game": 8
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 8,
+      "game": 1
+    }
+  },
+  {
+    "model": "filler.StreamerGame",
+    "fields": {
+      "streamer": 8,
+      "game": 2
+    }
+  }
+]
