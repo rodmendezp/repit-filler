@@ -1,5 +1,6 @@
 from django.apps import apps
 from django.http import JsonResponse
+from django.conf import settings
 from django.forms.models import model_to_dict
 from rest_framework import status, generics
 from rest_framework.views import APIView, Response
@@ -8,6 +9,7 @@ from .serializers import *
 from .models import GameQueueStatus, CustomQueueStatus
 from .tasks import request_jobs
 from .repitfiller.repit_filler import RepitTaskQueue
+from .repitfiller.utils import params_to_queue_name
 
 
 def ack_job(delivery_tag):
@@ -18,7 +20,7 @@ def ack_job(delivery_tag):
 
 def get_job(game, streamer='', user=''):
     repit_task_queue = RepitTaskQueue()
-    queue = RepitTaskQueue.params_to_queue_name(game, streamer, user)
+    queue = params_to_queue_name(game, streamer, user)
     message_count = repit_task_queue.get_message_count(queue)
     if message_count == 1:
         filler_queue_status = get_queue_status(game, streamer, user)
@@ -112,7 +114,10 @@ class RequestJobs(APIView):
             try:
                 filler_queue_status.locked = True
                 filler_queue_status.save()
-                request_jobs.delay(game, streamer, user)
+                if settings.NO_CELERY:
+                    request_jobs(game, streamer, user)
+                else:
+                    request_jobs.delay(game, streamer, user)
             except Exception as e:
                 request_response = 'There was an error when starting the processing %s' % repr(e)
         data = {'filler_status': model_to_dict(filler_queue_status), 'request_response': request_response}
@@ -199,6 +204,22 @@ class FillerGameList(generics.ListCreateAPIView):
 class FillerStreamerList(generics.ListCreateAPIView):
     queryset = FillerStreamer.objects.all()
     serializer_class = FillerStreamerSerializer
+
+    def get(self, request, *args, **kwargs):
+        game = request.query_params.get('game', None)
+        game_defaults = request.query_params.get('game_defaults', None)
+        if game:
+            repit_filler = apps.get_app_config('filler').repit_filler
+            streamers = repit_filler.get_game_streamers(game)
+            return JsonResponse({'streamers': streamers})
+        elif game_defaults:
+            try:
+                streamers = StreamerGame.objects.filter(game__name=game_defaults)
+                streamers = list(map(lambda x: x.streamer.name, streamers))
+                return JsonResponse({'streamers': streamers})
+            except FillerGame.DoesNotExist:
+                pass
+        return super().get(request, *args, **kwargs)
 
 
 class VideoList(generics.ListCreateAPIView):
