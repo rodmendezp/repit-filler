@@ -30,6 +30,7 @@ class TwitchVideo:
             if not self.videos or (self.video_info['game'] != game and self.video_info['streamer']):
                 self.get_new_videos(game, streamer)
                 if not self.videos:
+                    print('No videos after get_new_videos called')
                     return None
             while self.videos:
                 print('Checking videos')
@@ -117,14 +118,16 @@ class TwitchVideo:
         break_loop = False
         while videos is None or len(videos) == 0:
             params['offset'] = offset
+            print('Getting streamer videos')
             videos = self.twitch_client.get_streamer_videos(params)
+            print('total videos before filter = %d' % len(videos))
             if len(videos) != self.twitch_api_limit:
                 break_loop = True
             videos = list(filter(lambda x: x['game'] == game, videos))
-            # videos = list(filter(lambda x: x['length'] <= 3600, videos))
             videos = list(filter(lambda x: x['status'] != 'recording', videos))
-            if not settings.NO_CELERY:
-                videos = self.remove_existing_videos(videos)
+            print('total videos after filter = %d' % len(videos))
+            # if not settings.NO_CELERY:
+            #     videos = self.remove_existing_videos(videos)
             if break_loop:
                 break
             offset += self.twitch_api_limit
