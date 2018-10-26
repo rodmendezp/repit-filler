@@ -69,6 +69,7 @@ class TwitchVideo:
         return self.repit_twitch_client.video.post_object(data)
 
     def get_random_top_game(self):
+        print('Getting random top game')
         limit = 10
         games = self.get_twitch_games(limit)
         game = None
@@ -80,6 +81,7 @@ class TwitchVideo:
         return game
 
     def get_random_top_streamer(self, game, limit=10):
+        print('Getting random top streamer')
         streamers = None
         offset = 0
         while not streamers:
@@ -91,10 +93,13 @@ class TwitchVideo:
         return streamers[randint]['channel']['name']
 
     def get_new_videos(self, game=None, streamer=None):
+        print('Getting new videos for game %s and streamer %s' % (game, streamer))
         if not game:
             game = self.get_random_top_game()
+            print('Got random game %s' % game)
         if not streamer:
             streamer = self.get_random_top_streamer(game)
+            print('Got random streamer %s')
         videos = None
         offset = 0
         params = {
