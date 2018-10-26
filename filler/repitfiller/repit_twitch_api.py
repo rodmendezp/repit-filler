@@ -6,6 +6,7 @@ from twitch.client import TwitchClient
 class RepitTwitchAPI:
     def __init__(self, settings_path=os.path.join(os.getcwd(), 'settings.json')):
         self.settings_path = settings_path
+        print('Settings path = ', settings_path)
         with open(self.settings_path, 'r') as f:
             settings = json.load(f)
         self.client = TwitchClient(client_id=settings['client_id'])
