@@ -100,7 +100,9 @@ class RepitFiller:
     def add_tasks(self, routing_key, total_tasks):
         print('Start add tasks with routing key = %s' % routing_key)
         new_tasks = 0
+        print('Total tasks requested %d' % total_tasks)
         game, streamer, user = routing_key_to_params(routing_key)
+        print('Params from routing key game = %s, streamer = %s, user = %s' % (game, streamer, user))
         while new_tasks < total_tasks:
             video = self.twitch_video.get_new_video(self.game, self.streamer)
             if not video:
