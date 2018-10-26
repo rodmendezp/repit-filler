@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ.get('FILLER_SETTINGS_SECRET_KEY', 'xpr!f2b5s&f1sa&gmge9sqpm$zk%i94+anbuz5@j0^sicq@d-5')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [os.environ.get('SERVER_INTERNAL_IP', '127.0.0.1')]
 
