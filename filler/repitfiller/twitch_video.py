@@ -30,6 +30,7 @@ class TwitchVideo:
             if not self.videos or (self.video_info['game'] != game and self.video_info['streamer']):
                 self.get_new_videos(game, streamer)
             while self.videos:
+                print('Checking videos')
                 check_video = self.videos.pop(0)
                 if not self.past_video(check_video['id'].replace('v', '')):
                     Video.objects.create(twid=check_video['id'].replace('v', ''))
