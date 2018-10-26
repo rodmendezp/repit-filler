@@ -29,6 +29,8 @@ class TwitchVideo:
         while video is None:
             if not self.videos or (self.video_info['game'] != game and self.video_info['streamer']):
                 self.get_new_videos(game, streamer)
+                if not self.videos:
+                    return None
             while self.videos:
                 print('Checking videos')
                 check_video = self.videos.pop(0)
@@ -103,7 +105,9 @@ class TwitchVideo:
             print('Got random game %s' % game)
         if not streamer:
             streamer = self.get_random_top_streamer(game)
-            print('Got random streamer %s')
+            print('Got random streamer %s' % streamer)
+            if streamer is None:
+                return
         videos = None
         offset = 0
         params = {
