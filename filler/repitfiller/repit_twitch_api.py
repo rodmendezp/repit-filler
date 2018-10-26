@@ -100,8 +100,10 @@ class RepitTwitchAPI:
         limit = params.get('limit', 10)
         offset = params.get('offset', 0)
         if not channel_twid and streamer_name:
+            print('Getting streamer channel id')
             streamer = self.get_streamer(streamer_name)
             channel_twid = streamer['channel']['twid']
+            print('Streamer channel id = %d' % channel_twid)
         return self.client.channels.get_videos(channel_twid, limit, offset, 'archive')
 
 
