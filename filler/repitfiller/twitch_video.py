@@ -88,6 +88,9 @@ class TwitchVideo:
         while not streamers:
             streamers = self.twitch_client.client.streams.get_live_streams(game=game, limit=limit,
                                                                            language='en', offset=offset)
+            if len(streamers) == 0:
+                print('Something went wrong, did not found streamers')
+                break
             streamers = list(filter(lambda x: x['channel']['broadcaster_language'] == 'en', streamers))
             offset += limit
         randint = random.randint(0, len(streamers) - 1)
