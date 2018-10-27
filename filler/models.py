@@ -1,4 +1,5 @@
 from django.db import models
+from .repitfiller.utils import params_to_queue_name
 
 
 class FillerGame(models.Model):
@@ -30,6 +31,10 @@ class GameQueueStatus(models.Model):
     locked = models.BooleanField(default=False)
     jobs_available = models.BooleanField(default=False)
 
+    @property
+    def queue_name(self):
+        return params_to_queue_name(self.game)
+
 
 class CustomQueueStatus(models.Model):
     game = models.CharField(max_length=255)
@@ -38,3 +43,7 @@ class CustomQueueStatus(models.Model):
     processing = models.BooleanField(default=False)
     locked = models.BooleanField(default=False)
     jobs_available = models.BooleanField(default=False)
+
+    @property
+    def queue_name(self):
+        return params_to_queue_name(self.game, self.streamer, self.user)
