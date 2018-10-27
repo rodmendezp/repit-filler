@@ -157,15 +157,19 @@ class RepitFiller:
         for queue in queues:
             self.clear_custom_queue(queue)
 
-    def get_job(self, game, streamer, user):
+    def get_task(self, game, streamer, user):
         queue = params_to_queue_name(game, streamer, user)
+        return self.get_task_queue(queue)
+
+    def get_task_queue(self, queue):
         method, _, body = self.channel.basic_get(queue=queue)
         if not method or method.NAME == 'Basic.GetEmpty':
-            return 'EMPTY'
+            return None
         task = pickle.loads(body)
-        task['st_time'] = str(task['st_time'])
-        task['end_time'] = str(task['end_time'])
-        task['delivery_tag'] = str(method.delivery_tag)
+        task['video_id'] = int(task['video_id'])
+        task['st_time'] = int(task['st_time'])
+        task['end_time'] = int(task['end_time'])
+        task['delivery_tag'] = int(method.delivery_tag)
         return task
 
     def ack_task(self, delivery_tag):

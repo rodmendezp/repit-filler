@@ -124,8 +124,9 @@ class TwitchVideo:
             if len(videos) != self.twitch_api_limit:
                 break_loop = True
             videos = list(filter(lambda x: x['game'] == game, videos))
+            print('total videos after game filter = %d' % len(videos))
             videos = list(filter(lambda x: x['status'] != 'recording', videos))
-            print('total videos after filter = %d' % len(videos))
+            print('total videos after recording filter = %d' % len(videos))
             # if not settings.NO_CELERY:
             #     videos = self.remove_existing_videos(videos)
             if break_loop:
