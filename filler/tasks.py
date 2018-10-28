@@ -21,7 +21,6 @@ def request_jobs(game, streamer, user):
         repit_filler.add_tasks_custom(game, user, streamer)
     else:
         repit_filler.add_tasks_game(game)
-    # repit_filler.close_connection()
     if user:
         filler_queue_status = CustomQueueStatus.objects.filter(game=game, streamer=streamer, user=user)
     else:
