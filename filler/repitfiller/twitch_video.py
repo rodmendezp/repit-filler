@@ -35,6 +35,8 @@ class TwitchVideo:
             while self.videos:
                 print('Checking videos')
                 check_video = self.videos.pop(0)
+                if self.twitch_client.is_video_restricted(check_video['id'].replace('v', '')):
+                    continue
                 if not self.past_video(check_video['id'].replace('v', '')):
                     Video.objects.create(twid=check_video['id'].replace('v', ''))
                     return check_video
