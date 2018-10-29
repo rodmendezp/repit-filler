@@ -1,3 +1,5 @@
+import sys
+import traceback
 from django.apps import apps
 from .repitfiller.repit_filler import RepitTaskQueue
 from .models import GameQueueStatus, CustomQueueStatus
@@ -43,7 +45,16 @@ def get_task(queue_status):
     print('Getting repit_filler')
     repit_filler = apps.get_app_config('filler').repit_filler
     print('Repit_Filler = ', repit_filler)
-    return repit_filler.get_task_queue(queue_status.queue_name)
+    try:
+        task = repit_filler.get_task_queue(queue_status.queue_name)
+    except Exception as e:
+        exc_info = sys.exc_info()
+        print(e)
+        print(e.message)
+    finally:
+        traceback.print_exception(*exc_info)
+        del exc_info
+    return task
 
 
 def ack_task(delivery_tag):
