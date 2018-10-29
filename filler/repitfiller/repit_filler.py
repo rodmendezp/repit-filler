@@ -167,22 +167,26 @@ class RepitFiller:
         print('Is channel closed? ', self.channel.is_closed)
         try:
             method, _, body = self.channel.basic_get(queue=queue)
+            if not method or method.NAME == 'Basic.GetEmpty':
+                print('get_task_queue Returning None')
+                return None
+            task = pickle.loads(body)
+            task['video_id'] = int(task['video_id'])
+            task['st_time'] = int(task['st_time'])
+            task['end_time'] = int(task['end_time'])
+            task['delivery_tag'] = int(method.delivery_tag)
+            print('Delivery Tag = ', method.delivery_tag)
+            return task
         except Exception as e:
-            exc_info = sys.exc_info()
+            print('In get_task_queue Exception')
             print(e)
-            print(e.message)
         finally:
+            print('Calling exc info')
+            exc_info = sys.exc_info()
             traceback.print_exception(*exc_info)
             del exc_info
-        if not method or method.NAME == 'Basic.GetEmpty':
-            return None
-        task = pickle.loads(body)
-        task['video_id'] = int(task['video_id'])
-        task['st_time'] = int(task['st_time'])
-        task['end_time'] = int(task['end_time'])
-        task['delivery_tag'] = int(method.delivery_tag)
-        print('Delivery Tag = ', method.delivery_tag)
-        return task
+        print('get_task_queue Returning None 2')
+        return None
 
     def ack_task(self, delivery_tag):
         self.channel.basic_ack(delivery_tag=delivery_tag)
