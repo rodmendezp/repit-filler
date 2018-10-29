@@ -1,5 +1,5 @@
-import json
 import os
+import json
 from twitch.client import TwitchClient
 
 
@@ -106,5 +106,8 @@ class RepitTwitchAPI:
             print('Streamer channel id = %d' % channel_twid)
         return self.client.channels.get_videos(channel_twid, limit, offset, 'archive')
 
-
-
+    def is_video_restricted(self, video_twid):
+        response = self.client.videos._request_get('vods/%s/access_token' % video_twid, url='https://api.twitch.tv/api/')
+        token = json.loads(response['token'])
+        restricted_bitrates = token['chansub']['restricted_bitrates']
+        return restricted_bitrates != []
