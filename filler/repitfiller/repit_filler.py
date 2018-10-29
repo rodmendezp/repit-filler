@@ -1,4 +1,3 @@
-import sys
 import pika
 import pickle
 import requests
@@ -169,6 +168,7 @@ class RepitFiller:
             method, _, body = self.channel.basic_get(queue=queue)
             if not method or method.NAME == 'Basic.GetEmpty':
                 print('get_task_queue Returning None')
+                print('not method or method.NAME == Basic.GetEmpty')
                 return None
             task = pickle.loads(body)
             task['video_id'] = int(task['video_id'])
@@ -180,16 +180,17 @@ class RepitFiller:
         except Exception as e:
             print('In get_task_queue Exception')
             print(e)
-        finally:
-            print('Calling exc info')
-            exc_info = sys.exc_info()
-            traceback.print_exception(*exc_info)
-            del exc_info
+            traceback.print_exc()
         print('get_task_queue Returning None 2')
         return None
 
     def ack_task(self, delivery_tag):
-        self.channel.basic_ack(delivery_tag=delivery_tag)
+        try:
+            self.channel.basic_ack(delivery_tag=delivery_tag)
+        except Exception as e:
+            print('In ack_task Exception')
+            print(e)
+            traceback.print_exc()
         return {'status': 'SUCCEED'}
 
     def get_game_streamers(self, game, limit=10):
