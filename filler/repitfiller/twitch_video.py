@@ -63,6 +63,7 @@ class TwitchVideo:
         }
 
     def post_video_repit_data(self, video):
+        print('posting video %s to repit twitchdata' % video['id'].replace('v', ''))
         data = {
             'twid': video['id'].replace('v', ''),
             'streamer_twid': video['channel']['id'],
