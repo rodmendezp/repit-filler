@@ -1,5 +1,3 @@
-import sys
-import traceback
 from django.apps import apps
 from .repitfiller.repit_filler import RepitTaskQueue
 from .models import GameQueueStatus, CustomQueueStatus
@@ -51,11 +49,6 @@ def get_task(queue_status):
     except Exception as e:
         print('In get_task Exception')
         print(e)
-    finally:
-        print('Calling exc info')
-        exc_info = sys.exc_info()
-        traceback.print_exception(*exc_info)
-        del exc_info
     return task if task else None
 
 
