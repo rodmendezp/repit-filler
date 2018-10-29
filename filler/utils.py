@@ -42,6 +42,7 @@ def get_task(queue_status):
         queue_status.save()
     print('Getting repit_filler')
     repit_filler = apps.get_app_config('filler').repit_filler
+    print('Repit_Filler = ', repit_filler)
     return repit_filler.get_task_queue(queue_status.queue_name)
 
 
