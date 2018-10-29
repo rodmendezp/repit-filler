@@ -1,6 +1,8 @@
+import sys
 import pika
 import pickle
 import requests
+import traceback
 from rest_framework import status
 from django.conf import settings
 
@@ -162,7 +164,16 @@ class RepitFiller:
         return self.get_task_queue(queue)
 
     def get_task_queue(self, queue):
-        method, _, body = self.channel.basic_get(queue=queue)
+        print('Is channel closed? ', self.channel.is_closed())
+        try:
+            method, _, body = self.channel.basic_get(queue=queue)
+        except Exception as e:
+            exc_info = sys.exc_info()
+            print(e)
+            print(e.message)
+        finally:
+            traceback.print_exception(*exc_info)
+            del exc_info
         if not method or method.NAME == 'Basic.GetEmpty':
             return None
         task = pickle.loads(body)
@@ -170,6 +181,7 @@ class RepitFiller:
         task['st_time'] = int(task['st_time'])
         task['end_time'] = int(task['end_time'])
         task['delivery_tag'] = int(method.delivery_tag)
+        print('Delivery Tag = ', method.delivery_tag)
         return task
 
     def ack_task(self, delivery_tag):
