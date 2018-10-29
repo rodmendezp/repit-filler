@@ -164,7 +164,7 @@ class RepitFiller:
         return self.get_task_queue(queue)
 
     def get_task_queue(self, queue):
-        print('Is channel closed? ', self.channel.is_closed())
+        print('Is channel closed? ', self.channel.is_closed)
         try:
             method, _, body = self.channel.basic_get(queue=queue)
         except Exception as e:
