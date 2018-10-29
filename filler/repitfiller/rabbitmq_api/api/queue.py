@@ -38,9 +38,11 @@ class QueueAPI(RabbitAPI):
         vhost = quote(vhost, '')
         path = '%s/%s/%s' % (self.path, vhost, name)
         response = self._request_get(path)
+        print('response from get_queue_message_count = ', response)
         if response.status_code != status.HTTP_200_OK:
             return None
         response = response.json()
+        print('response.json() = ', response)
         return response.get('messages', None)
 
     def tasks_available(self, name, vhost='/'):

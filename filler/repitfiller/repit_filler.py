@@ -260,6 +260,7 @@ class RepitTaskQueue:
         self.rabbitmq_client = RabbitMQClient()
 
     def get_message_count(self, queue):
+        print('Getting message count from %s' % queue)
         return self.rabbitmq_client.queue.get_queue_message_count(queue)
 
     def tasks_available(self, queue):
