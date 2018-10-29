@@ -18,6 +18,8 @@ class TaskView(APIView):
         queue_status = get_or_create_queue_status(game, streamer, user)
         print('Queue Status = ', queue_status)
         data = {'task': get_task(queue_status) if queue_status and queue_status.jobs_available else None}
+        print('TaskView GET ending')
+        print(data)
         return Response(data, status=status.HTTP_200_OK)
 
     def post(self, request):

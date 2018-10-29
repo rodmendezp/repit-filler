@@ -46,15 +46,17 @@ def get_task(queue_status):
     repit_filler = apps.get_app_config('filler').repit_filler
     print('Repit_Filler = ', repit_filler)
     try:
+        print('queue name = %s' % queue_status.queue_name)
         task = repit_filler.get_task_queue(queue_status.queue_name)
     except Exception as e:
-        exc_info = sys.exc_info()
+        print('In get_task Exception')
         print(e)
-        print(e.message)
     finally:
+        print('Calling exc info')
+        exc_info = sys.exc_info()
         traceback.print_exception(*exc_info)
         del exc_info
-    return task
+    return task if task else None
 
 
 def ack_task(delivery_tag):
