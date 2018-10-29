@@ -14,8 +14,10 @@ from .models import FillerGame, FillerStreamer, StreamerGame, GameQueueStatus, C
 class TaskView(APIView):
     def get(self, request):
         game, streamer, user = get_request_params(request.query_params)
+        print('Getting task game = %s, streamer = %s, user = %s' % (game, streamer, user))
         queue_status = get_or_create_queue_status(game, streamer, user)
-        data = {'task': get_task(queue_status) if queue_status.jobs_available else None}
+        print('Queue Status = ', queue_status)
+        data = {'task': get_task(queue_status) if queue_status and queue_status.jobs_available else None}
         return Response(data, status=status.HTTP_200_OK)
 
     def post(self, request):
