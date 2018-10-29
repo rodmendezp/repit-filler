@@ -34,11 +34,13 @@ def get_or_create_queue_status(game, streamer, user):
 
 
 def get_task(queue_status):
+    print('Getting Task')
     repit_task_queue = RepitTaskQueue()
     message_count = repit_task_queue.get_message_count(queue_status.queue_name)
     if message_count == 1:
         queue_status.jobs_available = False
         queue_status.save()
+    print('Getting repit_filler')
     repit_filler = apps.get_app_config('filler').repit_filler
     return repit_filler.get_task_queue(queue_status.queue_name)
 
