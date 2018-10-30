@@ -31,7 +31,7 @@ class RepitFiller:
                                            heartbeat_interval=600,
                                            blocked_connection_timeout=300)
         self.connection = pika.BlockingConnection(params)
-        self.channel = self.connection.channel(1)
+        self.channel = self.connection.channel()
         self.channel.exchange_declare(exchange=constants.EXCHANGE_NAME, exchange_type='topic')
         self.get_game_queues()
 
@@ -164,6 +164,9 @@ class RepitFiller:
 
     def get_task_queue(self, queue):
         print('Is channel closed? ', self.channel.is_closed)
+        if self.channel.is_closed:
+            print('Reopening connection')
+            self.init()
         try:
             method, _, body = self.channel.basic_get(queue=queue)
             if not method or method.NAME == 'Basic.GetEmpty':
