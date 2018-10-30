@@ -22,6 +22,7 @@ class TwitchVideo:
             'game': None,
             'streamer': None,
         }
+        self.min_length = 600 # in seconds
         self.twitch_api_limit = 10
 
     def get_new_video(self, game, streamer):
@@ -87,7 +88,7 @@ class TwitchVideo:
             game = games[randint]
         return game
 
-    def get_random_top_streamer(self, game, limit=10):
+    def get_random_top_streamer(self, game, limit=5):
         print('Getting random top streamer')
         streamers = None
         offset = 0
@@ -126,6 +127,8 @@ class TwitchVideo:
             print('total videos before filter = %d' % len(videos))
             if len(videos) != self.twitch_api_limit:
                 break_loop = True
+            videos = list(filter(lambda x: x['length'] > self.min_length, videos))
+            print('total videos after len (> 10 min) filter = %d' % len(videos))
             videos = list(filter(lambda x: x['game'] == game, videos))
             print('total videos after game filter = %d' % len(videos))
             videos = list(filter(lambda x: x['status'] != 'recording', videos))

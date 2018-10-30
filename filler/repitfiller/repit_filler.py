@@ -114,6 +114,9 @@ class RepitFiller:
             video_twid = video['id'].replace('v', '')
             print('Got video = %s' % video_twid)
             twitch_chat = TwitchChat(video_twid, self.twitch_video.settings['client_id'])
+            if not twitch_chat.get_messages_timestamp():
+                print('No chat messages')
+                continue
             twitch_highlight = TwitchHighlight(twitch_chat.get_messages_timestamp())
             candidates = twitch_highlight.get_candidates()
             print('Got %d candidates' % len(candidates))
