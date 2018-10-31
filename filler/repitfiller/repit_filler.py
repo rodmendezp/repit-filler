@@ -161,6 +161,13 @@ class RepitFiller:
         for queue in queues:
             self.clear_custom_queue(queue)
 
+    def reconnect(self):
+        print('reconnecting')
+        if self.channel.is_closed:
+            self.init()
+            print('After Reconnection, Is channel closed?', self.channel.is_closed)
+        return
+
     def get_task(self, game, streamer, user):
         queue = params_to_queue_name(game, streamer, user)
         return self.get_task_queue(queue)
