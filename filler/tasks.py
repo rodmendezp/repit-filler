@@ -7,6 +7,8 @@ from .models import GameQueueStatus, CustomQueueStatus
 @shared_task
 def request_jobs(game, streamer, user):
     repit_filler = apps.get_app_config('filler').repit_filler
+    print('Is channel closed?', repit_filler.channel.is_closed)
+    repit_filler.reconnect()
     if user:
         filler_queue_status = CustomQueueStatus.objects.filter(game=game, streamer=streamer, user=user)
     else:
