@@ -12,7 +12,8 @@ from .models import FillerGame, FillerStreamer, StreamerGame, GameQueueStatus, C
 
 
 class TaskView(APIView):
-    def get(self, request):
+    @staticmethod
+    def get(request):
         game, streamer, user = get_request_params(request.query_params)
         print('Getting task game = %s, streamer = %s, user = %s' % (game, streamer, user))
         queue_status = get_or_create_queue_status(game, streamer, user)
@@ -35,7 +36,8 @@ class TaskView(APIView):
         print(data)
         return Response(data, status=status.HTTP_200_OK)
 
-    def post(self, request):
+    @staticmethod
+    def post(request):
         delivery_tag = request.data.get('delivery_tag', None)
         if not delivery_tag:
             return Response({'error': 'Bad Request'}, status=status.HTTP_400_BAD_REQUEST)
@@ -44,7 +46,8 @@ class TaskView(APIView):
 
 
 class StatusView(APIView):
-    def get(self, request):
+    @staticmethod
+    def get(request):
         game, streamer, user = get_request_params(request.query_params)
         queue_status = get_queue_status(game, streamer, user)
         if not queue_status:
@@ -54,7 +57,8 @@ class StatusView(APIView):
 
 
 class ProcessView(APIView):
-    def get(self, request):
+    @staticmethod
+    def get(request):
         game, streamer, user = get_request_params(request.query_params)
         queue_status = get_queue_status(game, streamer, user)
         if not queue_status:
