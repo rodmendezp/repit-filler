@@ -1,11 +1,10 @@
 import pika
 import pickle
-import requests
 import traceback
-from rest_framework import status
 from django.conf import settings
 
 from . import constants
+from ..utils import get_queue_status
 from .twitch_chat import TwitchChat
 from .twitch_video import TwitchVideo
 from .twitch_highlight import TwitchHighlight
@@ -18,7 +17,6 @@ class RepitFiller:
         self.connection = None
         self.channel = None
         self.queues = []
-        self.queues_id = {}
         self.routing_keys = []
         self.game = None
         self.streamer = None
@@ -33,7 +31,6 @@ class RepitFiller:
         self.connection = pika.BlockingConnection(params)
         self.channel = self.connection.channel()
         self.channel.exchange_declare(exchange=constants.EXCHANGE_NAME, exchange_type='topic')
-        self.get_game_queues()
 
     def get_game_queues(self):
         queues = self.rabbitmq_client.queue.get_queues('game')
@@ -62,8 +59,15 @@ class RepitFiller:
         if not routing_key:
             routing_key = self.get_queue_bindings(queue)
         self.channel.queue_delete(queue=queue)
-        self.queues.remove(queue)
+        if queue in self.queues:
+            self.queues.remove(queue)
         self.routing_keys.remove(routing_key)
+
+    def add_tasks_both(self, game, streamer, user):
+        if user:
+            self.add_tasks_custom(game, streamer, user)
+        else:
+            self.add_tasks_game(game)
 
     def add_tasks_game(self, game, total_tasks=constants.TASKS_GAME):
         print('Start add tasks game = %s' % game)
@@ -75,16 +79,12 @@ class RepitFiller:
             self.create_binding(queue, routing_key)
         self.add_tasks(routing_key, total_tasks)
 
-    def add_tasks_custom(self, game, user, streamer='', total_tasks=constants.TASKS_CUSTOM):
+    def add_tasks_custom(self, game, streamer, user, total_tasks=constants.TASKS_CUSTOM):
         self.game = game
         self.streamer = streamer
         self.user = user
-        if streamer:
-            routing_key = params_to_routing_key(game, streamer, user)
-            queue = params_to_queue_name(game, streamer, user)
-        else:
-            routing_key = params_to_routing_key(game, user=user)
-            queue = params_to_queue_name(game, user=user)
+        routing_key = params_to_routing_key(game, streamer, user)
+        queue = params_to_queue_name(game, streamer, user)
         self.create_queue(queue)
         self.create_binding(queue, routing_key)
         self.add_tasks(routing_key, total_tasks)
@@ -100,15 +100,12 @@ class RepitFiller:
     # TODO: Add tasks should pass game and streamer to get_new_video
     def add_tasks(self, routing_key, total_tasks):
         print('Start add tasks with routing key = %s' % routing_key)
-        new_tasks = 0
         print('Total tasks requested %d' % total_tasks)
+        new_tasks = 0
         game, streamer, user = routing_key_to_params(routing_key)
         print('Params from routing key game = %s, streamer = %s, user = %s' % (game, streamer, user))
         while new_tasks < total_tasks:
             video = self.twitch_video.get_new_video(self.game, self.streamer)
-            if not video:
-                print('There was an error getting a new video')
-                break
             if not settings.NO_CELERY:
                 self.twitch_video.post_video_repit_data(video)
             video_twid = video['id'].replace('v', '')
@@ -121,22 +118,12 @@ class RepitFiller:
             candidates = twitch_highlight.get_candidates()
             print('Got %d candidates' % len(candidates))
             self.add_candidates(candidates, video_twid, routing_key)
-            print('New Tasks = ', new_tasks)
-            if new_tasks == 0:
-                print('Before _update_queue_jobs_available')
-                self.update_queue_jobs_available(self.game, self.streamer or streamer, self.user or user)
+            if new_tasks == 0 and len(candidates) != 0:
+                print('Before update_queue_status_jobs_available')
+                self.update_queue_status_jobs_available(self.game, self.streamer or streamer, self.user or user)
             new_tasks += len(candidates)
+            print('New Tasks = ', new_tasks)
         return
-
-    def update_queue_jobs_available(self, game, streamer, user):
-        print('in _update_queue_jobs_available')
-        print('game = %s, streamer = %s, user = %s' % (game, streamer, user))
-        data = {'jobs_available': True}
-        if user:
-            response = self.update_custom_queue_status(game, streamer, user, data)
-        else:
-            response = self.update_game_queue_status(game, data)
-        return response
 
     def clear_custom_queue(self, queue):
         routing_key = self.get_queue_bindings(queue['name'])
@@ -168,10 +155,6 @@ class RepitFiller:
             print('After Reconnection, Is channel closed?', self.channel.is_closed)
         return
 
-    def get_task(self, game, streamer, user):
-        queue = params_to_queue_name(game, streamer, user)
-        return self.get_task_queue(queue)
-
     def get_task_queue(self, queue):
         try:
             method, _, body = self.channel.basic_get(queue=queue)
@@ -193,6 +176,14 @@ class RepitFiller:
         print('get_task_queue Returning None 2')
         return None
 
+    def get_task(self, queue_status):
+        repit_task_queue = RepitTaskQueue()
+        message_count = repit_task_queue.get_message_count(queue_status.queue_name)
+        if message_count == 1:
+            queue_status.jobs_available = False
+            queue_status.save()
+        return self.get_task_queue(queue_status.queue_name)
+
     def ack_task(self, delivery_tag):
         try:
             self.channel.basic_ack(delivery_tag=delivery_tag)
@@ -213,51 +204,10 @@ class RepitFiller:
             self.connection.close()
 
     @staticmethod
-    def _get_game_queues_status():
-        response = requests.get(constants.GAME_QUEUE_ENDPOINT)
-        if response.status_code != status.HTTP_200_OK:
-            return None
-        return response.json()
-
-    def update_game_queue_status(self, game, data):
-        print('update_game_queue_status start')
-        if game not in self.queues_id:
-            queues = self._get_game_queues_status()
-            for queue in queues:
-                if queue['game'] == game:
-                    self.queues_id[game] = queue['id']
-                    break
-            if game not in self.queues_id:
-                print('not found id')
-                print('queues = ', queues)
-                return False
-        url = '%s%s' % (constants.GAME_QUEUE_ENDPOINT, self.queues_id[game])
-        data['game'] = game
-        print('put request to %s' % url)
-        print('data = ', data)
-        response = requests.put(url, data=data)
-        print('response = ', response)
-        return response.status_code == status.HTTP_200_OK
-
-    @staticmethod
-    def update_custom_queue_status(game, streamer, user, data):
-        params = {
-            'game': game,
-            'streamer': streamer,
-            'user': user,
-        }
-        response = requests.get(constants.CUSTOM_QUEUE_ENDPOINT, params=params)
-        if response.status_code != status.HTTP_200_OK:
-            return False
-        response_data = response.json()
-        if len(response_data) != 1:
-            return False
-        queue_id = response_data[0]['id']
-        url = '%s%s' % (constants.CUSTOM_QUEUE_ENDPOINT, queue_id)
-        for key, value in params.items():
-            data[key] = value
-        response = requests.put(url, data=data)
-        return response.status_code == status.HTTP_200_OK
+    def update_queue_status_jobs_available(game, streamer, user):
+        queue_status = get_queue_status(game, streamer, user)
+        queue_status.jobs_available = True
+        queue_status.save()
 
     @staticmethod
     def candidate_to_message(candidate, video_twid):
