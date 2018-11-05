@@ -32,6 +32,7 @@ class TwitchVideo:
                 print('Checking videos')
                 check_video = self.videos.pop(0)
                 if self.twitch_client.is_video_restricted(check_video['id'].replace('v', '')):
+                    print('Video %s is restricted' % check_video['id'].replace('v', ''))
                     continue
                 if not self.past_video(check_video['id'].replace('v', '')):
                     Video.objects.create(twid=check_video['id'].replace('v', ''))
@@ -42,8 +43,10 @@ class TwitchVideo:
     def past_video(video_id):
         try:
             Video.objects.get(twid=video_id)
+            print('Video %s is already in filler video' % video_id)
             return True
         except Video.DoesNotExist:
+            print('Video %s is not in filler video' % video_id)
             return False
 
     @staticmethod

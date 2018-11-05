@@ -43,7 +43,7 @@
     "model": "filler.FillerGame",
     "pk": 6,
     "fields": {
-      "name": "Starcraft II",
+      "name": "StarCraft II",
       "twid": 490422
     }
   },

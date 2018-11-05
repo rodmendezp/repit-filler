@@ -5,7 +5,7 @@ from .utils import get_queue_status
 from celery.exceptions import SoftTimeLimitExceeded
 
 
-@shared_task(soft_time_limit=600)
+@shared_task(soft_time_limit=300)
 def request_jobs(game, streamer, user):
     try:
         repit_filler = apps.get_app_config('filler').repit_filler
