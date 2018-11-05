@@ -4,7 +4,7 @@ from django.forms.models import model_to_dict
 from rest_framework.views import APIView, Response
 
 from .tasks import request_jobs
-from .utils import get_queue_status, get_task, ack_task
+from .utils import get_queue_status, ack_task
 from .utils import get_or_create_queue_status, get_request_params
 from .serializers import FillerGameSerializer, FillerStreamerSerializer
 from .serializers import GameQueueStatusSerializer, CustomQueueStatusSerializer
@@ -20,7 +20,7 @@ class TaskView(APIView):
         repit_filler = apps.get_app_config('filler').repit_filler
         print('Is channel closed?', repit_filler.channel.is_closed)
         repit_filler.reconnect()
-        data = {'task': get_task(queue_status) if queue_status and queue_status.jobs_available else None}
+        data = {'task': repit_filler.get_task(queue_status) if queue_status and queue_status.jobs_available else None}
         print('TaskView GET ending')
         print(data)
         return Response(data, status=status.HTTP_200_OK)
