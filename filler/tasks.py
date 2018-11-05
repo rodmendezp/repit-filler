@@ -2,33 +2,26 @@ from __future__ import absolute_import
 from django.apps import apps
 from celery import shared_task
 from .models import GameQueueStatus, CustomQueueStatus
+from .utils import get_queue_status
 
 
 @shared_task
 def request_jobs(game, streamer, user):
     repit_filler = apps.get_app_config('filler').repit_filler
     print('Is channel closed?', repit_filler.channel.is_closed)
-    repit_filler.reconnect()
-    if user:
-        filler_queue_status = CustomQueueStatus.objects.filter(game=game, streamer=streamer, user=user)
-    else:
-        filler_queue_status = GameQueueStatus.objects.filter(game=game)
-    filler_queue_status = filler_queue_status[0] if len(filler_queue_status) == 1 else None
-    if filler_queue_status.processing:
+    if repit_filler.channel.is_closed:
+        repit_filler.reconnect()
+    queue_status = get_queue_status(game, streamer, user)
+    if not queue_status:
+        print('Queue for game = %s, streamer = %s, user = %s was not found' % (game, streamer, user))
         return
-    filler_queue_status.locked = False
-    filler_queue_status.processing = True
-    filler_queue_status.save()
-    if user:
-        repit_filler.add_tasks_custom(game, user, streamer)
-    else:
-        repit_filler.add_tasks_game(game)
-    if user:
-        filler_queue_status = CustomQueueStatus.objects.filter(game=game, streamer=streamer, user=user)
-    else:
-        filler_queue_status = GameQueueStatus.objects.filter(game=game)
-    filler_queue_status = filler_queue_status[0] if len(filler_queue_status) == 1 else None
-    if filler_queue_status.locked:
+    if queue_status.processing:
+        print('Queue for game = %s, streamer = %s, user = %s already processing' % (game, streamer, user))
         return
-    filler_queue_status.processing = False
-    filler_queue_status.save()
+    queue_status.locked = False
+    queue_status.processing = True
+    queue_status.save()
+    repit_filler.add_tasks_both(game, user, streamer)
+    queue_status = get_queue_status(game, streamer, user)
+    queue_status.processing = False
+    queue_status.save()
