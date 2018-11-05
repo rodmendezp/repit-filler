@@ -156,7 +156,7 @@ class RepitFiller:
             print('After Reconnection, Is channel closed?', self.channel.is_closed)
         return
 
-    def get_task_queue(self, queue):
+    def get_task_queue(self, queue, try_again=False):
         try:
             method, _, body = self.channel.basic_get(queue=queue)
             if not method or method.NAME == 'Basic.GetEmpty':
@@ -174,6 +174,12 @@ class RepitFiller:
             print('In get_task_queue Exception')
             print(e)
             traceback.print_exc()
+            if try_again:
+                print('Trying again')
+                print('Is channel closed?', self.channel.is_closed)
+                if self.channel.is_closed:
+                    self.init()
+                return self.get_task_queue(queue)
         print('get_task_queue Returning None 2')
         return None
 
@@ -183,7 +189,7 @@ class RepitFiller:
         if message_count == 1:
             queue_status.jobs_available = False
             queue_status.save()
-        return self.get_task_queue(queue_status.queue_name)
+        return self.get_task_queue(queue_status.queue_name, True)
 
     def ack_task(self, delivery_tag):
         try:
