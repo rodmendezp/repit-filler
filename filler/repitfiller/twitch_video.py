@@ -10,7 +10,6 @@ from .repit_twitch_api import RepitTwitchAPI
 
 
 # Class to get videos id of videos that have not been added to db yet
-# For now it decides which game and streamer to look based on settings priorities
 class TwitchVideo:
     def __init__(self, settings_path=os.path.join(os.getcwd(), 'settings.json')):
         self.repit_twitch_client = RepitClient().twitch_data
@@ -22,17 +21,13 @@ class TwitchVideo:
             'game': None,
             'streamer': None,
         }
-        self.min_length = 600 # in seconds
-        self.twitch_api_limit = 10
+        self.min_length = 600  # in seconds
 
     def get_new_video(self, game, streamer):
         video = None
         while video is None:
-            if not self.videos or (self.video_info['game'] != game and self.video_info['streamer']):
-                self.get_new_videos(game, streamer)
-                if not self.videos:
-                    print('No videos after get_new_videos called')
-                    return None
+            if not self.videos:
+                self.videos = self.get_new_videos(game, streamer)
             while self.videos:
                 print('Checking videos')
                 check_video = self.videos.pop(0)
@@ -41,7 +36,7 @@ class TwitchVideo:
                 if not self.past_video(check_video['id'].replace('v', '')):
                     Video.objects.create(twid=check_video['id'].replace('v', ''))
                     return check_video
-        return None
+        raise NoVideosException
 
     @staticmethod
     def past_video(video_id):
@@ -77,13 +72,14 @@ class TwitchVideo:
         return self.repit_twitch_client.video.post_object(data)
 
     def get_random_top_game(self):
+        skip_games = ['Just Chatting', 'Poker', 'Casino']
         print('Getting random top game')
         limit = 10
         games = self.get_twitch_games(limit)
         game = None
         while game is None:
             randint = random.randint(0, limit - 1)
-            if games[randint] == 'Just Chatting':
+            if games[randint] in skip_games:
                 continue
             game = games[randint]
         return game
@@ -96,8 +92,7 @@ class TwitchVideo:
             streamers = self.twitch_client.client.streams.get_live_streams(game=game, limit=limit,
                                                                            language='en', offset=offset)
             if len(streamers) == 0:
-                print('Something went wrong, did not found streamers')
-                break
+                raise NoStreamerException
             streamers = list(filter(lambda x: x['channel']['broadcaster_language'] == 'en', streamers))
             offset += limit
         randint = random.randint(0, len(streamers) - 1)
@@ -111,13 +106,13 @@ class TwitchVideo:
         if not streamer:
             streamer = self.get_random_top_streamer(game)
             print('Got random streamer %s' % streamer)
-            if streamer is None:
-                return
         videos = None
+        last_videos = None
         offset = 0
+        limit = 100
         params = {
             'streamer_name': streamer,
-            'limit': self.twitch_api_limit,
+            'limit': limit,
         }
         break_loop = False
         while videos is None or len(videos) == 0:
@@ -125,7 +120,9 @@ class TwitchVideo:
             print('Getting streamer videos')
             videos = self.twitch_client.get_streamer_videos(params)
             print('total videos before filter = %d' % len(videos))
-            if len(videos) != self.twitch_api_limit:
+            if (last_videos and last_videos == videos) or len(videos) == 0:
+                break
+            if len(videos) != limit:
                 break_loop = True
             videos = list(filter(lambda x: x['length'] > self.min_length, videos))
             print('total videos after len (> 10 min) filter = %d' % len(videos))
@@ -133,15 +130,17 @@ class TwitchVideo:
             print('total videos after game filter = %d' % len(videos))
             videos = list(filter(lambda x: x['status'] != 'recording', videos))
             print('total videos after recording filter = %d' % len(videos))
-            # if not settings.NO_CELERY:
-            #     videos = self.remove_existing_videos(videos)
+            if not settings.NO_CELERY:
+                videos = self.remove_existing_videos(videos)
             if break_loop:
                 break
-            offset += self.twitch_api_limit
-        self.videos = videos
+            offset += limit
+            last_videos = videos
         self.video_info['game'] = game
         self.video_info['streamer'] = streamer
-        return
+        if not videos:
+            raise NoVideosException
+        return videos
 
     def remove_existing_videos(self, videos):
         i = 0
@@ -167,3 +166,11 @@ class TwitchVideo:
         games = self.twitch_client.client.games.get_top(limit=limit)
         games = list(map(lambda x: x['game']['name'], games))
         return games
+
+
+class NoStreamerException(Exception):
+    pass
+
+
+class NoVideosException(Exception):
+    pass
