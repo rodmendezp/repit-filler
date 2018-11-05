@@ -31,9 +31,6 @@ class TwitchVideo:
             while self.videos:
                 print('Checking videos')
                 check_video = self.videos.pop(0)
-                if self.twitch_client.is_video_restricted(check_video['id'].replace('v', '')):
-                    print('Video %s is restricted' % check_video['id'].replace('v', ''))
-                    continue
                 if not self.past_video(check_video['id'].replace('v', '')):
                     Video.objects.create(twid=check_video['id'].replace('v', ''))
                     return check_video
@@ -133,6 +130,8 @@ class TwitchVideo:
             print('total videos after game filter = %d' % len(videos))
             videos = list(filter(lambda x: x['status'] != 'recording', videos))
             print('total videos after recording filter = %d' % len(videos))
+            videos = list(filter(lambda x: not self.twitch_client.is_video_restricted(x['id'].replace('v', '')), videos))
+            print('total videos after restricted filter = %d' % len(videos))
             if not settings.NO_CELERY:
                 videos = self.remove_existing_videos(videos)
             if break_loop:
