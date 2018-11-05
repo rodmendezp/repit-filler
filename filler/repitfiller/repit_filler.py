@@ -61,7 +61,8 @@ class RepitFiller:
         self.channel.queue_delete(queue=queue)
         if queue in self.queues:
             self.queues.remove(queue)
-        self.routing_keys.remove(routing_key)
+        if routing_key in self.routing_keys:
+            self.routing_keys.remove(routing_key)
 
     def add_tasks_both(self, game, streamer, user):
         if user:
