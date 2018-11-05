@@ -19,7 +19,8 @@ class TaskView(APIView):
         print('Queue Status = ', queue_status)
         repit_filler = apps.get_app_config('filler').repit_filler
         print('Is channel closed?', repit_filler.channel.is_closed)
-        repit_filler.reconnect()
+        if repit_filler.channel.is_closed:
+            repit_filler.reconnect()
         data = {'task': repit_filler.get_task(queue_status) if queue_status and queue_status.jobs_available else None}
         print('TaskView GET ending')
         print(data)
