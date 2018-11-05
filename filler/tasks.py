@@ -5,7 +5,7 @@ from .utils import get_queue_status
 from celery.exceptions import SoftTimeLimitExceeded
 
 
-@shared_task(soft_time_limit=300)
+@shared_task(soft_time_limit=2, time_limit=5)
 def request_jobs(game, streamer, user):
     try:
         repit_filler = apps.get_app_config('filler').repit_filler
@@ -27,6 +27,7 @@ def request_jobs(game, streamer, user):
         queue_status.processing = False
         queue_status.save()
     except SoftTimeLimitExceeded:
+        print('SoftTimeLimitExceeded Exception')
         queue_status = get_queue_status(game, streamer, user)
         queue_status.processing = False
         queue_status.save()
