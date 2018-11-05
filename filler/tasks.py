@@ -8,17 +8,12 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 @shared_task(soft_time_limit=300, time_limit=315)
 def request_jobs(game, streamer, user):
+    repit_filler = apps.get_app_config('filler').repit_filler
     try:
-        repit_filler = apps.get_app_config('filler').repit_filler
-        print('Is channel closed?', repit_filler.channel.is_closed)
-        if repit_filler.channel.is_closed:
-            repit_filler.reconnect()
+        repit_filler.connect()
+        repit_filler.get_game_queues()
         queue_status = get_queue_status(game, streamer, user)
-        if not queue_status:
-            print('Queue for game = %s, streamer = %s, user = %s was not found' % (game, streamer, user))
-            return
-        if queue_status.processing:
-            print('Queue for game = %s, streamer = %s, user = %s already processing' % (game, streamer, user))
+        if not queue_status or queue_status.processing:
             return
         queue_status.locked = False
         queue_status.processing = True
@@ -36,6 +31,7 @@ def request_jobs(game, streamer, user):
         queue_status = get_queue_status(game, streamer, user)
         queue_status.processing = False
         queue_status.save()
+        repit_filler.close_connection()
     except SoftTimeLimitExceeded:
         print('SoftTimeLimitExceeded Exception')
         queue_status = get_queue_status(game, streamer, user)
