@@ -14,10 +14,10 @@ class FillerConfig(AppConfig):
         return table_name in connection.introspection.table_names()
 
     def ready(self):
-        # self.init_repit_filler()
-        # self.repit_filler.clear_all_custom_queue()
-        # if self.db_table_exists('filler_gamequeuestatus'):
-        #     self.reset_status()
+        self.init_repit_filler()
+        self.repit_filler.clear_all_custom_queue()
+        if self.db_table_exists('filler_gamequeuestatus'):
+            self.reset_status()
         super().ready()
 
     @staticmethod
