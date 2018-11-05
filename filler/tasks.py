@@ -22,7 +22,7 @@ def request_jobs(game, streamer, user):
         queue_status.locked = False
         queue_status.processing = True
         queue_status.save()
-        repit_filler.add_tasks_both(game, user, streamer)
+        repit_filler.add_tasks_both(game, streamer, user)
         queue_status = get_queue_status(game, streamer, user)
         queue_status.processing = False
         queue_status.save()
