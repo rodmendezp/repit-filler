@@ -14,10 +14,10 @@ class FillerConfig(AppConfig):
         return table_name in connection.introspection.table_names()
 
     def ready(self):
-        self.init_repit_filler()
-        self.repit_filler.clear_all_custom_queue()
-        if self.db_table_exists('filler_gamequeuestatus'):
-            self.reset_status()
+        # self.init_repit_filler()
+        # self.repit_filler.clear_all_custom_queue()
+        # if self.db_table_exists('filler_gamequeuestatus'):
+        #     self.reset_status()
         super().ready()
 
     @staticmethod
@@ -36,6 +36,7 @@ class FillerConfig(AppConfig):
             game_queue.jobs_available = repit_task_queue.tasks_available(queue)
             game_queue.processing = False
             game_queue.locked = False
+            game_queue.message = ''
             game_queue.save()
         print()
 
