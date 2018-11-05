@@ -24,7 +24,7 @@ class RepitFiller:
         self.rabbitmq_client = RabbitMQClient()
         self.twitch_video = TwitchVideo()
 
-    def init(self):
+    def connect(self):
         params = pika.ConnectionParameters(host=constants.RABBIT_HOST,
                                            heartbeat_interval=600,
                                            blocked_connection_timeout=300)
@@ -152,7 +152,7 @@ class RepitFiller:
     def reconnect(self):
         print('reconnecting')
         if self.channel.is_closed:
-            self.init()
+            self.connect()
             print('After Reconnection, Is channel closed?', self.channel.is_closed)
         return
 
@@ -178,7 +178,7 @@ class RepitFiller:
                 print('Trying again')
                 print('Is channel closed?', self.channel.is_closed)
                 if self.channel.is_closed:
-                    self.init()
+                    self.connect()
                 return self.get_task_queue(queue)
         print('get_task_queue Returning None 2')
         return None
