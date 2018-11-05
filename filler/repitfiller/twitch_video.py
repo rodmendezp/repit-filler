@@ -26,7 +26,7 @@ class TwitchVideo:
     def get_new_video(self, game, streamer):
         video = None
         while video is None:
-            if not self.videos:
+            if not self.videos or self.different_game_streamer(game, streamer):
                 self.videos = self.get_new_videos(game, streamer)
             while self.videos:
                 print('Checking videos')
@@ -35,6 +35,9 @@ class TwitchVideo:
                     Video.objects.create(twid=check_video['id'].replace('v', ''))
                     return check_video
         raise NoVideosException
+
+    def different_game_streamer(self, game, streamer):
+        return self.video_info['game'] != game or self.video_info['streamer'] != streamer
 
     @staticmethod
     def past_video(video_id):
