@@ -30,6 +30,7 @@ class GameQueueStatus(models.Model):
     processing = models.BooleanField(default=False)
     locked = models.BooleanField(default=False)
     jobs_available = models.BooleanField(default=False)
+    message = models.CharField(max_length=255, default='')
 
     @property
     def queue_name(self):
@@ -43,6 +44,7 @@ class CustomQueueStatus(models.Model):
     processing = models.BooleanField(default=False)
     locked = models.BooleanField(default=False)
     jobs_available = models.BooleanField(default=False)
+    message = models.CharField(max_length=255, default='')
 
     @property
     def queue_name(self):
