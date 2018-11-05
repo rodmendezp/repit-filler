@@ -43,5 +43,5 @@ class FillerConfig(AppConfig):
     def init_repit_filler(self):
         from filler.repitfiller.repit_filler import RepitFiller
         self.repit_filler = RepitFiller()
-        self.repit_filler.init()
+        self.repit_filler.connect()
         self.repit_filler.get_game_queues()
