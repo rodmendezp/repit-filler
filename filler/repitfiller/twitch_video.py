@@ -130,7 +130,7 @@ class TwitchVideo:
                 break_loop = True
             videos = list(filter(lambda x: x['length'] > self.min_length, videos))
             print('total videos after len (> 10 min) filter = %d' % len(videos))
-            videos = list(filter(lambda x: x['lenght'] < self.max_length, videos))
+            videos = list(filter(lambda x: x['length'] < self.max_length, videos))
             print('total videos after len (< 24 hrs) filter = %d' % len(videos))
             videos = list(filter(lambda x: x['game'] == game, videos))
             print('total videos after game filter = %d' % len(videos))
