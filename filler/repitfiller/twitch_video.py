@@ -22,6 +22,7 @@ class TwitchVideo:
             'streamer': None,
         }
         self.min_length = 600  # in seconds
+        self.max_length = 24 * 60 * 60
 
     def get_new_video(self, game, streamer):
         video = None
@@ -129,6 +130,8 @@ class TwitchVideo:
                 break_loop = True
             videos = list(filter(lambda x: x['length'] > self.min_length, videos))
             print('total videos after len (> 10 min) filter = %d' % len(videos))
+            videos = list(filter(lambda x: x['lenght'] < self.max_length, videos))
+            print('total videos after len (< 24 hrs) filter = %d' % len(videos))
             videos = list(filter(lambda x: x['game'] == game, videos))
             print('total videos after game filter = %d' % len(videos))
             videos = list(filter(lambda x: x['status'] != 'recording', videos))
