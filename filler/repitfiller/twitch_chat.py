@@ -3,7 +3,6 @@ import re
 from six.moves import xrange
 from repitapi.client import RepitClient
 from .repit_twitch_api import RepitTwitchAPI
-from django.forms.models import model_to_dict
 from twitchchatdl.app.downloader import download
 from requests.exceptions import ConnectionError, HTTPError
 
