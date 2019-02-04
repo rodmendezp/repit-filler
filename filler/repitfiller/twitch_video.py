@@ -12,6 +12,8 @@ from .repit_twitch_api import RepitTwitchAPI
 # Class to get videos id of videos that have not been added to db yet
 class TwitchVideo:
     def __init__(self, settings_path=os.path.join(os.getcwd(), 'settings.json')):
+        if os.environ.get('REPIT_SETTINGS', None):
+            settings_path = os.environ['REPIT_SETTINGS']
         self.repit_twitch_client = RepitClient().twitch_data
         with open(settings_path, 'r') as f:
             self.settings = json.load(f)
